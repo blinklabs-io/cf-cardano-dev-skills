@@ -23,9 +23,20 @@ on:
       - "skills/**"
       - "registry/**"
       - "docs/sources/**"
+  # Manual trigger for an already-open PR (e.g. one opened before this
+  # workflow existed): Actions → PR Policy → Run workflow, or
+  #   gh workflow run pr-policy.yml -f pr=<number>
+  # Requires write access, and always runs this file from the default
+  # branch — the same trusted-code invariant as pull_request_target.
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: "Pull request number to check"
+        required: true
+        type: string
 
 concurrency:
-  group: pr-policy-${{ github.event.pull_request.number }}
+  group: pr-policy-${{ github.event.pull_request.number || inputs.pr }}
   cancel-in-progress: true
 
 permissions:
@@ -36,6 +47,8 @@ jobs:
   mechanical:
     name: Mechanical policy checks
     runs-on: ubuntu-latest
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
     outputs:
       new_sources: ${{ steps.check.outputs.new_sources }}
       new_skills: ${{ steps.check.outputs.new_skills }}
@@ -45,7 +58,15 @@ jobs:
           fetch-depth: 0
 
       - name: Fetch PR head (data only, never executed)
-        run: git fetch origin "refs/pull/${{ github.event.pull_request.number }}/head:refs/remotes/pr/head"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git fetch origin "refs/pull/${PR_NUMBER}/head:refs/remotes/pr/head"
+          BASE_REF='${{ github.event.pull_request.base.ref }}'
+          if [ -z "$BASE_REF" ]; then
+            BASE_REF=$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json baseRefName --jq .baseRefName)
+          fi
+          echo "BASE_REF=origin/$BASE_REF" >> "$GITHUB_ENV"
 
       - uses: actions/setup-python@v5
         with:
@@ -60,7 +81,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python scripts/check-pr-policy.py \
-            --base "origin/${{ github.event.pull_request.base.ref }}" \
+            --base "$BASE_REF" \
             --head refs/remotes/pr/head \
             --output-md policy-report.md \
             --github-output "$GITHUB_OUTPUT"
@@ -85,6 +106,7 @@ jobs:
     env:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GEMINI_MODEL: gemini-2.5-flash
+      PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
     steps:
       - name: Check for API key
         id: key
@@ -103,7 +125,15 @@ jobs:
 
       - name: Fetch PR head (data only, never executed)
         if: steps.key.outputs.present == 'true'
-        run: git fetch origin "refs/pull/${{ github.event.pull_request.number }}/head:refs/remotes/pr/head"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git fetch origin "refs/pull/${PR_NUMBER}/head:refs/remotes/pr/head"
+          BASE_REF='${{ github.event.pull_request.base.ref }}'
+          if [ -z "$BASE_REF" ]; then
+            BASE_REF=$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json baseRefName --jq .baseRefName)
+          fi
+          echo "BASE_REF=origin/$BASE_REF" >> "$GITHUB_ENV"
 
       - uses: actions/setup-python@v5
         if: steps.key.outputs.present == 'true'
@@ -118,9 +148,12 @@ jobs:
         if: steps.key.outputs.present == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BASE_REF: origin/${{ github.event.pull_request.base.ref }}
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
+          if [ -z "$PR_TITLE" ]; then
+            PR_TITLE=$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json title --jq .title)
+          fi
+
           python scripts/check-pr-policy.py \
             --base "$BASE_REF" --head refs/remotes/pr/head \
             --output-md policy-report.md || true
@@ -166,7 +199,7 @@ jobs:
               fs.readFileSync(process.env.RESPONSE_FILE, 'utf8') +
               '\n\n*Automated advisory review — a maintainer makes the final call.*';
             const { owner, repo } = context.repo;
-            const issue_number = context.payload.pull_request.number;
+            const issue_number = parseInt(process.env.PR_NUMBER, 10);
             const comments = await github.paginate(
               github.rest.issues.listComments, { owner, repo, issue_number });
             const existing = comments.find(c => c.body.includes(marker));
