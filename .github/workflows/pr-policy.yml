@@ -73,6 +73,9 @@ jobs:
     name: AI scope review (advisory)
     runs-on: ubuntu-latest
     needs: mechanical
+    # Advisory means advisory: an API outage or quota error must not put a
+    # red X on the PR — the mechanical job is the only one that may fail.
+    continue-on-error: true
     # Run even when mechanical checks fail — those PRs need the explanation
     # most — but only when the PR actually adds sources or skills.
     if: >-

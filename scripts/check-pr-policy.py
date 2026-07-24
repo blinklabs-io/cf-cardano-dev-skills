@@ -190,9 +190,15 @@ def vet_source(entry: dict) -> None:
         warn(f"source `{name}` ({slug}): repo is a fork — vetting rule 4 "
              "requires justifying in the PR that this is the maintained canonical")
 
-    # Rule 2: ≥1 release OR issue/PR activity in the last 3 months.
+    # Rule 2: ≥1 release tag OR issue/PR activity in the last 3 months.
+    # Check GitHub Releases first, then plain git tags — the written bar
+    # says "release tag", and many maintained repos tag without cutting
+    # GitHub Releases.
     releases = gh_api(f"/repos/{slug}/releases?per_page=1")
     if isinstance(releases, list) and releases:
+        return
+    tags = gh_api(f"/repos/{slug}/tags?per_page=1")
+    if isinstance(tags, list) and tags:
         return
     issues = gh_api(f"/repos/{slug}/issues?state=all&sort=updated"
                     "&direction=desc&per_page=1")
