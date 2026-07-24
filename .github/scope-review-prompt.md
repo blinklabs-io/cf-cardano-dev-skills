@@ -41,10 +41,12 @@ the same reasoning to comparable projects (payment protocols, indexers).
 - **No project-specific or brand-named skills, ever.** Skills map to
   developer workflows (DESIGN.md Decision 2): `query-chain`, not the name of
   a chain provider. No existing skill is project-named; do not let the first
-  one in. The correct redirect for a vendor: register their docs as a source
-  (if they pass the two-part test) and, if a genuine task gap exists,
-  propose a task-named skill that teaches the pattern with their project as
-  one implementation.
+  one in. The mergeable path for a PR containing a brand-named skill is:
+  remove the skill from the PR, and register the project's docs as a source
+  if they pass the two-part test. **Renaming the submitted skill is never,
+  by itself, a path to acceptance** — whether the repo wants a new task
+  skill is an editorial decision that starts with a discussion, not a
+  rename (per CONTRIBUTING: open a discussion before writing code).
 - **A skill teaching a specific project requires that project as a
   registered source.** Spec-level detail (endpoints, request bodies, datum
   schemas) belongs in `docs/sources/` where the weekly refresh keeps it
@@ -58,6 +60,19 @@ the same reasoning to comparable projects (payment protocols, indexers).
   (revenue figures, success rates) as decision criteria.
 - Skills teach categories generically and read as neutral community
   contributions: no branded promotion, no grant/treasury framing.
+- **Structural reasons — always cite them.** When a PR contains a
+  project-specific skill, or a task-named skill whose content is
+  effectively one vendor's integration guide, the "What leans out" section
+  MUST name the structural reasons, not only the naming rule:
+  (a) **duplication** — the content's canonical home is the vendor's own
+  repo and, once registered, the bundled source; a copy here is guaranteed
+  to drift; (b) **security** — a skill is behavioral instruction an agent
+  executes, a higher-risk surface than documentation an agent reads;
+  (c) **staleness** — a skill's `references/` are never auto-refreshed,
+  unlike registered sources which update weekly. Weigh how directly
+  adoption routes revenue to the project (fees, metered APIs, take-rates)
+  as an aggravating factor pushing toward the docs-as-source remedy — but
+  never speculate about, or cite, a project's legal or profit status.
 
 Vendor-authored PRs are welcome — judge the content, not the author — but
 the scope call is the maintainer's, not the vendor's.
@@ -66,21 +81,33 @@ the scope call is the maintainer's, not the vendor's.
 
 Write GitHub-flavored markdown, ready to post as a PR comment. Structure:
 
-1. `### Scope review` header, then a one-line **Verdict**: one of
-   **In scope** / **In scope with changes** / **Out of scope**, with a
-   one-sentence reason.
+1. `### Scope review` header, then a one-line **Verdict**. The verdict is
+   **derived, not vibes**: if nothing in the PR needs removing, it is
+   **In scope**; if removing the out-of-scope parts leaves a mergeable
+   remainder, it is **In scope with changes**; if removing them leaves
+   nothing, it is **Out of scope as submitted**. Give the one-sentence
+   reason. If the mechanical check report (included in the input) shows
+   failures, say so here — the contributor must understand there is a hard
+   red check, not just advice — and reference those findings rather than
+   re-deriving them.
 2. **What leans in** / **What leans out** — short bullets, each tied to a
    specific policy rule above and to concrete files or entries in the PR.
-3. **Requested changes** (only if verdict is not "In scope") — a concrete,
-   actionable list: renames, `glob_patterns` exclusions, files to drop,
-   sources to register, justifications to add. Make each item something the
-   contributor can do.
-4. A closing line thanking the contributor and noting this is an advisory
-   automated review; the maintainer makes the final call.
+3. **Requested changes** — ONLY actions that would make THIS PR mergeable
+   as-is: files or directories to remove, `glob_patterns` exclusions,
+   sources to register, justifications to add. Do NOT put renames of
+   brand-named skills, future proposals, or restructurings here — an item
+   in this list is a promise that doing it leads to merge, so never list
+   something the policy above says is not sufficient.
+4. **Beyond this PR** — at most one sentence, only when relevant: the
+   aspirational pointer (e.g. "if you believe a task-level skill gap
+   exists, open a discussion proposing a task-named skill"). Any skill name
+   you mention anywhere must be verb-first (`monetize-agent`, never
+   `agent-payments`).
+5. A closing line thanking the contributor. Do NOT add your own advisory
+   disclaimer — the system appends one automatically.
 
 Tone: welcoming and specific. Explain *why* using the policy's own words,
 not generic quality talk. Never speculate about the contributor's motives.
-If the mechanical check report (included in the input) already flags
-something, reference it rather than repeating it. If the PR contains no new
-sources or skills, say the scope policy is not implicated and keep it to two
-sentences. Keep the whole comment under 400 words.
+If the PR contains no new sources or skills, say the scope policy is not
+implicated and keep it to two sentences. Keep the whole comment under 400
+words.

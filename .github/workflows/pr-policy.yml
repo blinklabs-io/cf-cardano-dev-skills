@@ -34,6 +34,11 @@ on:
         description: "Pull request number to check"
         required: true
         type: string
+      post_comment:
+        description: "Post the AI review as a PR comment (uncheck to write it only to the run summary, for tuning)"
+        required: false
+        type: boolean
+        default: true
 
 concurrency:
   group: pr-policy-${{ github.event.pull_request.number || inputs.pr }}
@@ -186,8 +191,19 @@ jobs:
           RESPONSE_FILE: review-response.md
         run: python3 .github/scripts/scope-review.py
 
-      - name: Post sticky review comment
+      - name: Publish review to run summary
         if: steps.key.outputs.present == 'true'
+        run: |
+          echo "## AI scope review (as generated)" >> "$GITHUB_STEP_SUMMARY"
+          cat review-response.md >> "$GITHUB_STEP_SUMMARY"
+          echo "::group::generated review"
+          cat review-response.md
+          echo "::endgroup::"
+
+      - name: Post sticky review comment
+        if: >-
+          steps.key.outputs.present == 'true' &&
+          (github.event_name != 'workflow_dispatch' || inputs.post_comment)
         uses: actions/github-script@v7
         env:
           RESPONSE_FILE: review-response.md

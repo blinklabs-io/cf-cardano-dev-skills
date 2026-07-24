@@ -65,6 +65,21 @@ than sources**:
   request bodies, datum schemas) belongs in `docs/sources/`, where the
   weekly refresh keeps it current; a skill's `references/` directory is for
   behavioral guidance, not pasted specs.
+- **Renaming a brand-named skill is not, by itself, a path to
+  acceptance.** Whether the repo wants a new task skill is an editorial
+  decision — open a discussion proposing it before writing code.
+  Registering the project's docs as a source needs no discussion.
+- **Skills must survey, not steer.** Where multiple implementations of a
+  pattern exist, a skill presents them neutrally with honest decision
+  criteria (`query-chain` is the model). The more directly adoption routes
+  revenue to a project (metered APIs, protocol fees, marketplace
+  take-rates), the higher this bar, and the stronger the preference for
+  the docs-as-source path over skill content. Project-specific skills are
+  additionally rejected on structural grounds regardless of author or
+  intent: they duplicate content whose canonical home is elsewhere, they
+  put executable behavioral instructions (higher risk than docs) under a
+  brand's control, and their `references/` content has no refresh
+  mechanism and rots silently.
 - Teach categories generically (*"how to write a vesting validator"*), not
   product mechanics (*"how to use Product X's deposit endpoint"*).
 - A skill is a neutral community contribution. No branded promotion, no
