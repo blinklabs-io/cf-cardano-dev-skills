@@ -7,9 +7,14 @@ RESPONSE_FILE. Deliberately not an agent: no tools, no repo access, no shell
 — this runs on a pull_request_target workflow with a write-capable token, so
 the model only ever transforms pre-collected text into a review comment.
 
+If the pinned model returns the "no longer available" 404 (Google retires
+model ids faster than anyone updates pins), the script queries ListModels
+and retries once with the newest stable flash model that supports
+generateContent, logging the substitution.
+
 Env:
   GEMINI_API_KEY      required — Google AI Studio key (free tier is fine)
-  GEMINI_MODEL        model id (default: gemini-2.5-flash)
+  GEMINI_MODEL        model id (default: gemini-3.5-flash)
   GEMINI_API_URL      endpoint override, for tests
   SYSTEM_PROMPT_FILE  path to the rubric
   PROMPT_FILE         path to the review context
@@ -20,6 +25,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -34,26 +40,56 @@ def read(path_env: str) -> str:
         return fh.read()
 
 
+def api_get(url: str, api_key: str) -> dict | None:
+    req = urllib.request.Request(url, headers={"x-goog-api-key": api_key})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return json.load(resp)
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+        return None
+
+
+def find_replacement_model(base_url: str, api_key: str) -> str | None:
+    """Pick the newest stable flash text model from ListModels."""
+    data = api_get(f"{base_url}?pageSize=1000", api_key)
+    if not isinstance(data, dict):
+        return None
+    stable = re.compile(r"^models/(gemini-[0-9]+(?:\.[0-9]+)?-flash)$")
+    candidates = []
+    for m in data.get("models", []):
+        if "generateContent" not in m.get("supportedGenerationMethods", []):
+            continue
+        match = stable.match(m.get("name", ""))
+        if match:
+            candidates.append(match.group(1))
+    # "gemini-3.5-flash" > "gemini-3.1-flash": version-sort on the numbers
+    candidates.sort(
+        key=lambda n: [float(x) for x in re.findall(r"[0-9]+(?:\.[0-9]+)?", n)])
+    return candidates[-1] if candidates else None
+
+
 def main() -> int:
     api_key = os.environ["GEMINI_API_KEY"]
-    model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
-    url = os.environ.get(
+    model = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")
+    url_template = os.environ.get(
         "GEMINI_API_URL",
-        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+        "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
     )
+    url = url_template.replace("{model}", model)
+    base_url = url.split("/models")[0] + "/models"
 
     body = json.dumps({
         "system_instruction": {"parts": [{"text": read("SYSTEM_PROMPT_FILE")}]},
         "contents": [{"role": "user",
                       "parts": [{"text": read("PROMPT_FILE")}]}],
         "generationConfig": {
-            "maxOutputTokens": 2000,
+            "maxOutputTokens": 8000,
             "temperature": 0.2,
-            "thinkingConfig": {"thinkingBudget": 0},
         },
     }).encode()
 
     data = None
+    model_swapped = False
     for attempt in range(1, RETRIES + 1):
         req = urllib.request.Request(
             url, data=body,
@@ -67,6 +103,16 @@ def main() -> int:
             detail = exc.read().decode(errors="replace")[:1000]
             print(f"attempt {attempt}: HTTP {exc.code}: {detail}",
                   file=sys.stderr)
+            if exc.code == 404 and not model_swapped:
+                # Pinned model retired — ask the API what exists now.
+                replacement = find_replacement_model(base_url, api_key)
+                if replacement and replacement != model:
+                    print(f"model '{model}' unavailable; retrying with "
+                          f"'{replacement}'", file=sys.stderr)
+                    model, model_swapped = replacement, True
+                    url = url_template.replace("{model}", model)
+                    continue
+                return 1
             if exc.code not in (429, 500, 503) or attempt == RETRIES:
                 return 1
         except (urllib.error.URLError, TimeoutError) as exc:
