@@ -660,6 +660,8 @@
     - "lazer/contracts/cardano/*.md"
     - "lazer/contracts/cardano/validators/**/*.ak"
     - "lazer/contracts/cardano/lib/**/*.ak"
+    # Enumerated page: if upstream moves/renames it, this matches nothing and the
+    # guide silently drops from the bundle - watch refresh PR diffs for its deletion.
     - "apps/developer-hub/content/docs/price-feeds/pro/integrate-as-consumer/cardano.mdx"
   description: Pyth Pro (Lazer) pull oracle on Cardano - first-principles eUTxO design doc (state NFT, zero-withdrawal verification), Aiken contracts, consumer integration guide
   website: https://docs.pyth.network/price-feeds/pro
