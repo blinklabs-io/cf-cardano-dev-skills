@@ -71,21 +71,26 @@ Go through every item in the vulnerability checklist (see References below). For
 Key checks by contract type:
 
 **Spending validators:**
-- Double satisfaction: Are inputs uniquely identified?
-- Datum hijacking: Is the output datum validated?
-- Value preservation: Are output values checked?
-- Signer checks: Are required signers validated?
-- Datum transitions: Are state transitions constrained?
-- Output ordering: Are outputs found by address/value, not index?
+- Double satisfaction: Is each input bound to its own output (tagging, or one script input per tx)?
+- Datum hijacking: Is the continuing output's *full address* pinned, not just its datum?
+- UTxO authentication: Are protocol UTxOs identified by token, not by address?
+- Value preservation: Are output values checked, and is only the expected asset set allowed?
+- Signer checks: Are required signers validated on every branch, including the fallback?
+- Datum transitions: Are immutable fields asserted equal across the transition?
+- Output ordering: Are outputs found by predicate, or by unverified index?
 
 **Minting policies:**
-- Infinite minting: Is minting quantity constrained?
-- NFT authentication: Is the NFT tied to a UTxO for uniqueness?
-- Unchecked quantity: Is the exact mint amount validated?
+- Infinite minting: Is the quantity constrained across the *whole policy*, not one asset name?
+- One-shot uniqueness: Is the policy parameterized by a consumed `OutputReference`?
+- Burn path: Are negative quantities an explicit decision?
 
-**Staking validators:**
-- Withdrawal validation bypass (withdraw-zero attack)
-- Insufficient staking control
+**Stake scripts (`withdraw` / `publish` handlers):**
+- Withdrawal validation bypass: does the spender pin the *specific* stake script hash?
+- Insufficient staking control: does `withdraw` constrain where rewards go, and `publish` restrict certificates?
+
+Note that checklist entries 18, 20, 21, 22, 24 and 25 are engineering or operational
+concerns rather than exploit classes. Report them as Info unless you can demonstrate
+a concrete attack — inflating them costs credibility on the findings that matter.
 
 ### Step 4: Language-specific checks
 
