@@ -88,9 +88,10 @@ Key checks by contract type:
 - Withdrawal validation bypass: does the spender pin the *specific* stake script hash?
 - Insufficient staking control: does `withdraw` constrain where rewards go, and `publish` restrict certificates?
 
-Note that checklist entries 18, 20, 21, 22, 24 and 25 are engineering or operational
-concerns rather than exploit classes. Report them as Info unless you can demonstrate
-a concrete attack — inflating them costs credibility on the findings that matter.
+The checklist is split into two parts. Part 1 (#1-#28) are exploit classes and belong in
+findings at their assessed severity. Part 2 (#29-#33) are design and operational risks —
+report them as Info unless you can demonstrate a concrete attack, since inflating them
+costs credibility on the findings that matter.
 
 ### Step 4: Language-specific checks
 
@@ -145,7 +146,7 @@ End with a summary table and overall risk assessment.
 
 ## References
 
-- `references/vulnerability-checklist.md` -- The 33 eUTxO vulnerability patterns with detection and mitigation guidance
+- `references/vulnerability-checklist.md` -- 33 eUTxO patterns with detection and mitigation guidance, split into exploit classes (#1-#28) and design/operational risks (#29-#33)
 - Search `${CLAUDE_SKILL_DIR}/../../docs/sources/` for protocol specifications, design documents, and architecture notes
 - Aiken standard library documentation at https://aiken-lang.github.io/stdlib/
 - Cardano CIPs for relevant standards (CIP-57 for Plutus blueprints, CIP-68 for token metadata)
