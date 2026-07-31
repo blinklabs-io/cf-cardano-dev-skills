@@ -88,10 +88,32 @@ Key checks by contract type:
 - Withdrawal validation bypass: does the spender pin the *specific* stake script hash?
 - Insufficient staking control: does `withdraw` constrain where rewards go, and `publish` restrict certificates?
 
-The checklist is split into two parts. Part 1 (#1-#28) are exploit classes and belong in
-findings at their assessed severity. Part 2 (#29-#33) are design and operational risks —
-report them as Info unless you can demonstrate a concrete attack, since inflating them
-costs credibility on the findings that matter.
+### Step 3b: Decide whether the design/operational pass applies
+
+`references/design-and-operational-risks.md` covers five concerns that are **not**
+vulnerabilities: hardcoded addresses, collateral assumptions, script hash mismatch,
+Plutus version confusion, and redeemer size. They never belong in the findings table.
+
+Read the user's request to decide what they actually want:
+
+- **Security review only** ("is this safe?", "find vulnerabilities", "audit this") --
+  work the vulnerability checklist. When you finish, tell the user the design and
+  operational pass exists and ask whether they want it. Do not run it uninvited and do
+  not pad the report with it.
+- **Deployment or readiness framing** ("are we ready for mainnet?", "review before we
+  deploy", "check the deployment") -- both apply. Run the vulnerability checklist and
+  the design/operational pass, and say up front that you are doing both.
+- **Explicitly operational** ("check our parameterization", "is our Plutus version
+  right?") -- run the design/operational pass. Offer the security review as well, since
+  a request framed operationally often wants exploitability checked too.
+
+When both are in scope, keep them visually separate in the output (see Step 6). If a
+design/operational concern turns out to be concretely exploitable, it stops being an
+observation: report it as a finding under whichever vulnerability class it actually
+falls into, and cite the exploit.
+
+Several entries correlate across the two documents and carry **Related** links --
+follow them rather than treating the split as a hard wall.
 
 ### Step 4: Language-specific checks
 
@@ -144,9 +166,19 @@ For each finding, provide:
 
 End with a summary table and overall risk assessment.
 
+If you also ran the design/operational pass, put it **after** the findings under its own
+heading -- "Design and operational observations" -- with no severity labels and no
+entries in the findings summary table. Say plainly that these are not vulnerabilities.
+Mixing them into the severity-ranked list is what makes a reviewer look like they are
+padding, and it buries the findings that matter.
+
+If you did not run that pass, close with one line telling the user it is available and
+what it covers, so they can ask for it.
+
 ## References
 
-- `references/vulnerability-checklist.md` -- 33 eUTxO patterns with detection and mitigation guidance, split into exploit classes (#1-#28) and design/operational risks (#29-#33)
+- `references/vulnerability-checklist.md` -- 28 eUTxO exploit classes with detection and mitigation guidance; this is the source of findings
+- `references/design-and-operational-risks.md` -- 5 design, deployment, and compatibility concerns that are *not* vulnerabilities; report as observations only
 - Search `${CLAUDE_SKILL_DIR}/../../docs/sources/` for protocol specifications, design documents, and architecture notes
 - Aiken standard library documentation at https://aiken-lang.github.io/stdlib/
 - Cardano CIPs for relevant standards (CIP-57 for Plutus blueprints, CIP-68 for token metadata)
