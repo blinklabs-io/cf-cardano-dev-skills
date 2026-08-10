@@ -59,6 +59,10 @@ Required sections: When to use, When NOT to use, Key principles, Workflow.
 - Include trade-offs and decision criteria
 - Prescriptiveness scales with risk (strict for security, flexible for exploration)
 - No hardcoded paths — use relative references
+- Every doc is a living artifact: rewrite it to read as a clean one-shot final version.
+  No changelogs, no "correction to an earlier note", no "previously this said" callouts,
+  no narration of what changed. Git tracks the history. (Documenting that *external*
+  guidance is stale — a deprecated API, an archived repo — is content, not a changelog.)
 
 ## Documentation Governance
 
