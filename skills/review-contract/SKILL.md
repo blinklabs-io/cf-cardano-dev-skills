@@ -178,7 +178,7 @@ what it covers, so they can ask for it.
 
 ## References
 
-- `references/vulnerability-checklist.md` -- 28 eUTxO exploit classes with detection and mitigation guidance; this is the source of findings
+- `references/vulnerability-checklist.md` -- 32 eUTxO exploit classes with detection and mitigation guidance; this is the source of findings
 - `references/design-and-operational-risks.md` -- 5 design, deployment, and compatibility concerns that are *not* vulnerabilities; report as observations only
 - Search `${CLAUDE_SKILL_DIR}/../../docs/sources/` for protocol specifications, design documents, and architecture notes
 - Aiken standard library documentation at https://aiken-lang.github.io/stdlib/
