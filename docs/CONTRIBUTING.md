@@ -179,10 +179,9 @@ Instructions...
 
 ```bash
 python3 scripts/validate.py
-./scripts/update-doc-counts.sh    # refresh counts in README/CLAUDE
 ```
 
-Open a PR. CI runs validation + count-drift check.
+Open a PR. CI runs validation and the PR policy checks.
 
 ## Verifying executable claims
 
@@ -200,7 +199,7 @@ Docs (`CLAUDE.md`, `README.md`, `docs/DESIGN.md`, `docs/CONTRIBUTING.md`) must r
 | Change | Update these docs |
 |---|---|
 | New skill | README.md skills table; DESIGN.md if it changes the skill graph. Pages site skills catalog auto-regenerates on build. |
-| New source | Run `scripts/update-doc-counts.sh`; CONTRIBUTING.md only if introducing a new category or format. Pages site sources catalog auto-regenerates on build. |
+| New source | CONTRIBUTING.md only if introducing a new category or format. Pages site sources catalog auto-regenerates on build. |
 | New schema field | `registry/sources.yaml` header comment; CONTRIBUTING.md valid-values lists; DESIGN.md if architectural |
 | New script in `scripts/` | README.md if user-facing |
 | New hook | README.md "How to set the Cardano context" section; CLAUDE.md repo structure; `website/src/content/docs/how-it-works.md` |
@@ -211,10 +210,6 @@ Docs (`CLAUDE.md`, `README.md`, `docs/DESIGN.md`, `docs/CONTRIBUTING.md`) must r
 | Removed/renamed file | All docs that reference it — grep first |
 
 Pure internal tweaks (refactor a script, fix a typo in a skill body) don't trigger doc updates.
-
-### Auto-derived counts
-
-`scripts/update-doc-counts.sh` rewrites sentinels in CLAUDE.md and README.md from disk state. Sentinels look like `<!-- COUNT:skills -->15<!-- /COUNT:skills -->`. Run before pushing — CI runs `--check` and fails PRs on drift.
 
 ## Refreshing content
 
