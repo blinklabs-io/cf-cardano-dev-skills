@@ -85,7 +85,6 @@ This document captures the architectural decisions behind `cardano-dev-skills`. 
 - **Weekly upstream refresh** (`.github/workflows/refresh-docs.yml`) — every Monday 06:00 UTC, fetches all sources, opens a PR with the diff. Human review + merge before content lands on `main`.
 - **Schema validation** (`.github/workflows/validate.yml`) — runs on every PR touching `skills/**` or `registry/**`.
 - **Manifest self-healing** — `scripts/_fetch_docs.py` derives `.manifest.yaml` from disk state after every fetch (partial or full), so the manifest can't drift.
-- **Doc-count auto-derivation** — `scripts/update-doc-counts.sh` rewrites sentinels in CLAUDE.md and README.md from disk state. CI runs `--check` to fail PRs on drift.
 - **PR policy gate** (`.github/workflows/pr-policy.yml`) — on PRs touching `skills/`, `registry/`, or `docs/sources/`: mechanical checks (`scripts/check-pr-policy.py`, hard-fail — live source vetting, brand-named-skill detection, self-containment) plus an advisory AI scope review (a single non-agentic Gemini call posting a sticky verdict comment; skips cleanly when no `GEMINI_API_KEY` secret is configured). Humans still merge.
 
 **Planned (tracked, not built)** — live status is on the [roadmap](../website/src/content/docs/about/roadmap.md); the design intent for each:
@@ -100,10 +99,9 @@ These additions follow the principle: ship small, observe, iterate.
 
 **Why:** Stale READMEs are the most common rot in tooling repos. They mislead new contributors, make the project look abandoned, and damage credibility — particularly when the goal is broader adoption.
 
-**Mechanism (two layers):**
+**Mechanism:**
 
-1. **Auto-derived counts** for the most rot-prone numbers (skill count, source count). Inline HTML-comment sentinels (`<!-- COUNT:skills -->15<!-- /COUNT:skills -->`) are rewritten by `scripts/update-doc-counts.sh`. CI runs `--check` on every PR.
-2. **Per-change-type checklist** — canonical in `docs/CONTRIBUTING.md` (§Documentation governance), surfaced from `CLAUDE.md` — mapping change types (new skill, new source, new schema field, new script, new hook) to the docs that must be updated. Enforced by reviewer judgement and (planned) AI governance review.
+- **Per-change-type checklist** — canonical in `docs/CONTRIBUTING.md` (§Documentation governance), surfaced from `CLAUDE.md` — mapping change types (new skill, new source, new schema field, new script, new hook) to the docs that must be updated. Enforced by reviewer judgement and (planned) AI governance review.
 
 **Alternative considered:** Generate the entire README from a template + computed values. Rejected because narrative sections ("Why this exists", "How to set the Cardano context") need human prose, and a template-only approach makes those harder to evolve.
 
