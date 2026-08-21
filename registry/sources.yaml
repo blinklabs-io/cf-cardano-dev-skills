@@ -452,7 +452,7 @@
     - "**/*.ak"
     - "**/*.ts"
     - "**/*.java"
-  description: 19 generic blockchain use-case templates implemented across Aiken (on-chain) and Mesh/Evolution/cardano-client-lib (off-chain). Foundation reference set.
+  description: Generic blockchain use-case templates implemented across Aiken (on-chain) and Mesh/Evolution/cardano-client-lib (off-chain). Foundation reference set.
 
 - name: CIP-113 Programmable Tokens
   repo: https://github.com/cardano-foundation/cip113-programmable-tokens.git
@@ -899,8 +899,6 @@
 # =============================================================================
 
 # --- Smart Contract Languages (candidates) ---
-
-# Helios promoted to active sources on 2026-05-14 — see Hyperion-BT/helios above.
 
 # - name: Marlowe
 #   repo: https://github.com/input-output-hk/marlowe-cardano.git
