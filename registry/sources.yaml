@@ -43,7 +43,7 @@
 # --- Core Infrastructure ---
 
 - name: Ogmios
-  repo: https://github.com/cardanosolutions/ogmios.git
+  repo: https://github.com/CardanoSolutions/ogmios.git
   docs_path: docs
   format: markdown
   category: infrastructure
@@ -117,7 +117,7 @@
   description: Official PostgreSQL chain indexer (resource-heavy)
 
 - name: Mithril
-  repo: https://github.com/input-output-hk/mithril.git
+  repo: https://github.com/IntersectMBO/mithril.git
   docs_path: docs
   format: markdown
   category: infrastructure
@@ -358,7 +358,7 @@
   description: Plinth (formerly PlutusTx) — Haskell eDSL for writing Plutus / Plutus Core smart contracts, from IOG/Intersect. Captures the user-guide prose plus the worked code examples the site embeds via LiteralInclude.
 
 - name: Helios
-  repo: https://github.com/Hyperion-BT/helios.git
+  repo: https://github.com/HeliosLang/compiler.git
   docs_path: "."
   format: markdown
   category: smart-contracts
@@ -369,7 +369,7 @@
   description: DSL with JS/TS SDK that compiles to UPLC in the browser. Smaller community than Aiken but actively maintained.
 
 - name: OpShin
-  repo: https://github.com/opshin/opshin.git
+  repo: https://github.com/OpShin/opshin.git
   docs_path: "."
   format: markdown
   category: smart-contracts
@@ -427,18 +427,6 @@
     - "Tricks/**/*.md"
   description: Typed Haskell eDSL for highly optimized UPLC
 
-- name: Plu-ts
-  repo: https://github.com/HarmonicLabs/plu-ts.git
-  docs_path: "."
-  format: markdown
-  category: smart-contracts
-  priority: medium
-  glob_patterns:
-    - README.md
-    - "docs/**/*.md"
-    - "packages/**/README.md"
-  description: TypeScript eDSL for on-chain and off-chain
-
 - name: Scalus
   repo: https://github.com/scalus3/scalus.git
   docs_path: "."
@@ -451,7 +439,7 @@
   description: Scala 3 on-chain and off-chain platform
 
 - name: Cardano Use Case Templates
-  repo: https://github.com/cardano-foundation/cardano-template-and-ecosystem-monitoring.git
+  repo: https://github.com/cardano-foundation/cardano-templates.git
   docs_path: "."
   format: markdown
   format_overrides:
