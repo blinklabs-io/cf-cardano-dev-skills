@@ -91,6 +91,7 @@ Comprehensive map of tools, SDKs, and infrastructure in the Cardano developer ec
 | **DB-Sync** | Self-hosted | SQL | Production | High | Full chain in PostgreSQL, analytics, reporting. |
 | **Oura** | Self-hosted | Pipeline | Production | Medium | Event streaming, Kafka/Elastic/webhooks. |
 | **Cardano GraphQL** | Self-hosted | GraphQL | Production | Medium | Complex queries, relationship traversal. |
+| **Scrolls** | Self-hosted | Various | Production | Low | Lightweight chain indexer, key-value projections. |
 | **Carp** | Self-hosted | REST | Production | Low | Lightweight indexer, specific query patterns. |
 
 ## Infrastructure - Node & Network

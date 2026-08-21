@@ -903,7 +903,7 @@
 # Helios promoted to active sources on 2026-05-14 — see HeliosLang/compiler above.
 
 # - name: Marlowe
-#   repo: https://github.com/marlowe-lang/marlowe-cardano.git
+#   repo: https://github.com/input-output-hk/marlowe-cardano.git
 #   docs_path: docs
 #   format: markdown
 #   category: smart-contracts
@@ -912,6 +912,15 @@
 #   status: candidate
 
 # --- Off-chain SDKs (candidates) ---
+
+# - name: Lucid Evolution
+#   repo: https://github.com/anastasia-labs/lucid-evolution.git
+#   docs_path: docs
+#   format: markdown
+#   category: sdk
+#   priority: high
+#   description: Production-ready TypeScript tx builder by Anastasia Labs
+#   status: candidate
 
 # - name: Blaze SDK
 #   repo: https://github.com/butaneprotocol/blaze-cardano.git
@@ -932,7 +941,7 @@
 #   status: candidate
 
 # - name: CML (Cardano Multiplatform Lib)
-#   repo: https://github.com/dcSpark/cardano-multiplatform-lib.git
+#   repo: https://github.com/niccokunzmann/cml.git
 #   docs_path: docs
 #   format: markdown
 #   category: sdk
@@ -940,10 +949,21 @@
 #   description: Rust/WASM by dcSpark, Conway era support
 #   status: candidate
 
+# --- Infrastructure (candidates) ---
+
+# - name: Scrolls
+#   repo: https://github.com/txpipe/scrolls.git
+#   docs_path: docs
+#   format: markdown
+#   category: infrastructure
+#   priority: low
+#   description: Read-optimized chain data collections by TxPipe
+#   status: candidate
+
 # --- Wallet Connectors (candidates) ---
 
 # - name: Weld
-#   repo: https://github.com/Cardano-Forge/weld.git
+#   repo: https://github.com/cardano-forge/weld.git
 #   docs_path: docs
 #   format: markdown
 #   category: sdk
