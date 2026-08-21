@@ -406,7 +406,7 @@ def clone_and_extract(source, tmp_dir, docs_dir, pin=None):
                     # Reachable only if normalization collapsed a directory
                     # name onto a file name (upstream `foo:/x.md` alongside a
                     # file `foo`) — a namespace clash no suffix can resolve.
-                    # Drop the one file loudly rather than aborting a 56-source
+                    # Drop the one file loudly rather than aborting a full
                     # refresh with a traceback.
                     print(f"  WARN {name}: could not stage {rel} as "
                           f"{safe_rel}: {e}")
