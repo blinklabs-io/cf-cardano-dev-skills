@@ -900,7 +900,7 @@
 
 # --- Smart Contract Languages (candidates) ---
 
-# Helios promoted to active sources on 2026-05-14 — see HeliosLang/compiler above.
+# Helios promoted to active sources on 2026-05-14 — see Hyperion-BT/helios above.
 
 # - name: Marlowe
 #   repo: https://github.com/input-output-hk/marlowe-cardano.git
