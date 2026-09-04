@@ -114,6 +114,7 @@ through a Claude-only environment variable or the user's working directory.
 **Planned or deferred (tracked, not built)** — live status is on the [roadmap](../website/src/content/docs/about/roadmap.md); the design intent for each:
 - Local usage observability for tuning skill descriptions and finding unmatched prompts, without changing prompt behavior.
 - PR-time source-build check: when `registry/sources.yaml` changes, CI fetches the touched source(s) and verifies the clone + glob patterns produce files.
+- Stale-source report: the vetting bar (push within 6 months, archived, fork) runs only on new entries at PR time. Run it over every registered source weekly and surface failures as a report, never a block; removal stays a maintainer decision.
 
 These additions follow the principle: ship small, observe, iterate.
 
