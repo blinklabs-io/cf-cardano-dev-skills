@@ -85,6 +85,8 @@ Map the team's primary language and constraints to one of four stacks. Use this 
 | 3 | Aiken | PyCardano | Python backend, data team, scripting-heavy |
 | 4 | Aiken | cardano-client-lib | Java/Kotlin team, JVM ecosystem |
 
+For a wallet-connected dApp with no custom validator yet, the developer portal's starters are a ready alternative to this scaffold: `evolution-vite-react` (stack 1, Vite + React) and `mesh-nextjs` (stack 2, Next.js), each keeping the Blockfrost key on the server. Their READMEs are under `../../docs/sources/developer-portal-templates/`.
+
 Search the bundled docs for SDK details:
 
 - `../../docs/sources/aiken/` — Aiken language docs
@@ -93,6 +95,7 @@ Search the bundled docs for SDK details:
 - `../../docs/sources/mesh-sdk/` — Mesh SDK docs
 - `../../docs/sources/pycardano/` — PyCardano docs
 - `../../docs/sources/cardano-client-lib/` — cardano-client-lib docs
+- `../../docs/sources/developer-portal-templates/` — READMEs of the portal's runnable starters
 
 ### Step 3: Pick a network
 
