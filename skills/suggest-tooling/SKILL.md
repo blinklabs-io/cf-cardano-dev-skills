@@ -150,9 +150,9 @@ x402 lets an HTTP API charge per request, and lets clients and agents pay withou
 
 - Read `../../docs/sources/x402/specs/schemes/exact/scheme_exact_cardano.md` and `../../docs/sources/x402/typescript/packages/mechanisms/cardano/README.md` before answering. Take network ids from the spec's "Network Identifiers" section and output minimums from "Minimum UTXO Value (min-ada)", not from memory.
 - Starters: `x402-express` (a paid API plus a headless buyer) and `x402-next` (a browser paywall) under `../../docs/sources/developer-portal-templates/`.
-- Facilitator: the public facilitator at x402.org lists no Cardano network. Use one whose `/supported` response lists `cardano:*`, or run your own: the x402-express template includes a local facilitator built on `@x402/cardano`.
+- Facilitator: use one whose `/supported` response lists a `cardano:*` network (the rule is the same for any facilitator, public or not). For the hackathon, the x402-express README points to the hosted facilitator the Cardano Foundation announces; otherwise run your own, since that template includes a local facilitator built on `@x402/cardano`.
 - Language: only the TypeScript SDK has a Cardano mechanism. Check the installed x402 SDK for one before recommending another language, and do not hand-roll a client.
-- Pricing: every payment is one L1 transaction. The payment output carries at least ~1 ADA (~1.2–1.5 ADA alongside a token), which goes to the seller, and the buyer pays a fee of about 0.17 ADA. Price at 1 ADA or more, or in cents with USDM. For sub-cent usage, sell a pack of calls with one payment. x402's `batch-settlement` scheme has no Cardano binding.
+- Pricing: every payment is one L1 transaction, and the buyer also pays the network fee. A pure-lovelace payment output must itself clear the min-ADA floor, and a token payment carries min-ADA alongside the token; get the current figures from the spec's min-ada section. So price lovelace routes at or above that floor, price in cents with USDM, and for sub-cent usage sell a pack of calls with one payment.
 - For the developer: https://developers.cardano.org/x402 is the overview page.
 
 #### Scaling / Layer 2
