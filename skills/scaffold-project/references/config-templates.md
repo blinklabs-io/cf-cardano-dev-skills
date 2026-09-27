@@ -196,9 +196,7 @@ When you flip `CARDANO_NETWORK` between scaffolded environments, update only the
     "tx:redeem": "tsx src/hello/redeem.ts"
   },
   "dependencies": {
-    "@meshsdk/core": "^X.Y.Z",                 // PIN: latest Mesh SDK release.
-                                               // Check ../../docs/sources/mesh-sdk/
-                                               // or https://github.com/MeshJS/mesh/releases.
+    "@meshsdk/core": "1.9.1",                  // PIN: exact; check `npm view @meshsdk/core version`.
     "dotenv": "^16.4.5"
   },
   "devDependencies": {
@@ -376,8 +374,8 @@ strict = true
 ## Notes on pinning
 
 - Aiken: pin both `compiler` and the stdlib dependency. Mismatched versions cause confusing build errors.
-- TypeScript SDKs: commit `package-lock.json` or `pnpm-lock.yaml`. Caret ranges in `package.json` are fine as long as the lockfile is committed.
-- PyCardano: commit `poetry.lock`. Do not rely on caret ranges alone.
+- TypeScript: exact versions for `@meshsdk/*`, `@evolution-sdk/*`, pre-1.0 packages and `next`; `^` ranges for the rest. Commit `package-lock.json` or `pnpm-lock.yaml`.
+- PyCardano: pin it exactly and commit `poetry.lock`. Poetry's `^0.x` already holds the minor version, so pre-1.0 tools such as `ruff` can keep it.
 - cardano-client-lib: pin a single `cclib.version` property and reuse it across all `com.bloxbean.cardano:*` dependencies. Mixing versions across the cclib family causes runtime classpath errors.
 
 ## Notes on secrets

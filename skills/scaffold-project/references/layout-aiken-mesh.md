@@ -289,17 +289,17 @@ When the developer opts in, scaffold a Next.js App Router app under `frontend/` 
     "start": "next start"
   },
   "dependencies": {
-    "@meshsdk/core": "^X.Y.Z",                  // PIN; same major as the off-chain version
-    "@meshsdk/react": "^X.Y.Z",                 // React components for CIP-30
-    "next": "^15.0.0",
-    "react": "^18.3.0",
-    "react-dom": "^18.3.0"
+    "@meshsdk/core": "1.9.1",                   // PIN: exact, same version as the off-chain code
+    "@meshsdk/react": "1.9.0-beta.98",          // PIN: the 1.9 line; `latest` is a 2.0 beta
+    "next": "15.5.26",                          // PIN: exact
+    "react": "^19.3.0",                         // Next 15 requires React 19 (its upgrade guide)
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
-    "typescript": "^5.4.0"
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^5.4.0"                      // Next 15.5 rejects TypeScript 7
   }
 }
 ```
