@@ -24,7 +24,7 @@ Help developers, DReps, SPOs, and ADA holders understand and participate in Card
 
 ## When NOT to use
 
-- General smart contract development (use Aiken/Plutus skills)
+- General smart contract development (use `write-validator`)
 - Stake pool setup or configuration (separate topic)
 - Token minting or NFT creation
 - Basic wallet integration without governance (use `connect-wallet` skill)
