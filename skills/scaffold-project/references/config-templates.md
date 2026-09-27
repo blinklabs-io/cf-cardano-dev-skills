@@ -228,10 +228,8 @@ When you flip `CARDANO_NETWORK` between scaffolded environments, update only the
     "tx:redeem": "tsx src/hello/redeem.ts"
   },
   "dependencies": {
-    "@evolution-sdk/evolution": "^X.Y.Z",      // PIN: latest Evolution SDK release.
-                                               // Check ../../docs/sources/evolution-sdk/.
-    "dotenv": "^16.4.5",
-    "effect": "^3.0.0"                         // peer dep; Evolution is built on Effect-TS
+    "@evolution-sdk/evolution": "0.5.14",      // PIN: exact; check `npm view @evolution-sdk/evolution version`.
+    "dotenv": "^16.4.5"                        // Evolution brings its own Effect dependency
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
