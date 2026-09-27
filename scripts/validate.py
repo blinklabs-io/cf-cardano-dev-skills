@@ -45,6 +45,14 @@ FORBIDDEN_SHARED_VARIABLES = {"${CLAUDE_SKILL_DIR}", "${CLAUDE_PLUGIN_ROOT}"}
 HOST_TOOL_REFERENCE_RE = re.compile(
     r"`(?:Read|Grep|Glob|Edit|Write|WebFetch|WebSearch)`")
 
+# Citations of the bundled corpus resolve relative to the active SKILL.md
+# (docs/AGENT_COMPATIBILITY.md), so each must start with ../../ and name a path
+# that exists. A bare "docs/sources/" with nothing after it names the corpus and
+# is fine. Fenced code is skipped: it is text a skill writes into the user's
+# project, not a citation the agent follows.
+BARE_DOC_PATH_RE = re.compile(r"(?<![./\w-])docs/sources/(?=[\w<])")
+DOC_PATH_RE = re.compile(r"\.\./\.\./docs/sources/([^\s`'\"()\[\]]*)")
+
 # Windows path portability (issue #36). git aborts the ENTIRE checkout when a
 # tree contains a path Windows can't create — not just that file — so one bad
 # name locks every Windows user out of the repo. `scripts/_fetch_docs.py`
@@ -131,6 +139,26 @@ def parse_frontmatter(path: Path) -> dict | None:
         return None
 
 
+def check_bundled_doc_paths(path: Path, text: str) -> None:
+    """Flag bare or dead citations of docs/sources/ outside fenced code."""
+    in_fence = False
+    for lineno, line in enumerate(text.splitlines(), 1):
+        if line.lstrip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        if BARE_DOC_PATH_RE.search(line):
+            error(f"{path}:{lineno}: cite bundled docs as ../../docs/sources/..., "
+                  "relative to SKILL.md")
+        for match in DOC_PATH_RE.finditer(line):
+            target = match.group(1).rstrip(".,:;")
+            if not target or any(c in target for c in "<*{"):
+                continue
+            if not (DOCS_SOURCES_DIR / target).exists():
+                error(f"{path}:{lineno}: ../../docs/sources/{target} does not exist")
+
+
 def validate_skill(skill_dir: Path) -> None:
     """Validate a single skill directory."""
     skill_md = skill_dir / "SKILL.md"
@@ -206,6 +234,7 @@ def validate_skill(skill_dir: Path) -> None:
                 f"{skill_md}: shared skill body uses host-specific variable "
                 f"{variable}; resolve paths relative to SKILL.md instead"
             )
+    check_bundled_doc_paths(skill_md, raw_text)
     tool_refs = sorted(set(HOST_TOOL_REFERENCE_RE.findall(body)))
     if tool_refs:
         error(
@@ -233,6 +262,7 @@ def validate_skill(skill_dir: Path) -> None:
                 continue
             if ref_file.suffix in (".md", ".txt"):
                 ref_text = ref_file.read_text(encoding="utf-8")
+                check_bundled_doc_paths(ref_file, ref_text)
                 for variable in FORBIDDEN_SHARED_VARIABLES:
                     if variable in ref_text:
                         error(

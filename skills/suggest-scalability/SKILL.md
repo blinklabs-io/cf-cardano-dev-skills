@@ -58,7 +58,7 @@ Ground scaling claims in the bundled sources rather than memory:
 - `../../docs/sources/hydra/` — Hydra Head protocol (start with `docs/protocol-overview.md`, then `topologies/` and `use-cases/`)
 - `../../docs/sources/ouroboros-leios/` — Leios L1-throughput research
 
-Mithril and emerging rollups are **not** bundled as sources — verify their status upstream and flag them as such.
+Mithril is bundled under `../../docs/sources/mithril/`. The emerging rollups are **not** bundled — verify their status upstream and flag them as such.
 
 ### Step 3: Choose an approach
 
