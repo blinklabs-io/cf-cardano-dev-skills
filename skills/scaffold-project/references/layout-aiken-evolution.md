@@ -349,7 +349,7 @@ yaci-cli:> create-node -o --start   # create + start a default devnet
 devnet:default> enable-kupomios     # Ogmios on :1337, Kupo on :1442
 ```
 
-The script talks to Ogmios and Kupo through Evolution's Kupmios provider. Evolution 0.5.14's Blockfrost provider cannot read Yaci Store's protocol parameters (Yaci returns `drep_deposit` as a number, where Blockfrost's API returns a string), so it does not work against Yaci Store's Blockfrost-compatible API. `OGMIOS_URL` and `KUPO_URL` override the default ports.
+The script talks to Ogmios and Kupo through Evolution's Kupmios provider. The Yaci Store that DevKit bundles (the 2.0 line) returns `drep_deposit` as a number where Blockfrost's API returns a string, and Evolution 0.5.14's Blockfrost provider rejects the response, so the script doesn't use Yaci Store's Blockfrost-compatible API. `OGMIOS_URL` and `KUPO_URL` override the default ports.
 
 Fund the owner (account 0 of `DEV_WALLET_MNEMONIC`) before the first run. The script prints the address; at the devnet prompt:
 
