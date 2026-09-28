@@ -278,9 +278,9 @@ packages = [{ include = "acme_offchain", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"                          # PIN: match your CI Python version
-pycardano = "^X.Y.Z"                      # PIN: latest PyCardano release.
-                                          # Check ../../docs/sources/pycardano/
-                                          # or https://pypi.org/project/pycardano/.
+pycardano = "0.19.2"                      # PIN: exact; bump deliberately.
+cbor2 = ">=5.6.5,<6"                      # cbor2 6 breaks `import pycardano` 0.19.2;
+                                          # drop once PyCardano supports it.
 python-dotenv = "^1.0.1"                  # reads .env at startup
 requests = "^2.32.0"                      # provider HTTP
 
@@ -288,6 +288,7 @@ requests = "^2.32.0"                      # provider HTTP
 pytest = "^8.0.0"
 ruff = "^0.5.0"
 mypy = "^1.10.0"
+types-requests = "^2.32.0"
 
 [tool.poetry.scripts]
 tx-lock = "acme_offchain.hello.lock:main"      # `poetry run tx-lock`
@@ -304,6 +305,15 @@ target-version = "py311"
 [tool.mypy]
 python_version = "3.11"
 strict = true
+
+# PyCardano and blockfrost-python ship no type information.
+[[tool.mypy.overrides]]
+module = ["pycardano.*", "blockfrost.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["acme_offchain.yaci"]
+disallow_subclassing_any = false
 ```
 
 ## `pom.xml` (Stack 4: cardano-client-lib)
