@@ -332,24 +332,15 @@ disallow_subclassing_any = false
     <maven.compiler.source>21</maven.compiler.source>     <!-- PIN: match your CI JDK -->
     <maven.compiler.target>21</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <!-- PIN: latest cardano-client-lib release.
-         Check ../../docs/sources/cardano-client-lib/
-         or https://github.com/bloxbean/cardano-client-lib/releases. -->
-    <cclib.version>X.Y.Z</cclib.version>
+    <!-- PIN: one version for every com.bloxbean.cardano artifact; bump deliberately. -->
+    <cclib.version>0.7.2</cclib.version>
   </properties>
 
   <dependencies>
-    <!-- Core transaction builder. -->
+    <!-- Core transaction builder; brings the plutus and blueprint modules with it. -->
     <dependency>
       <groupId>com.bloxbean.cardano</groupId>
       <artifactId>cardano-client-lib</artifactId>
-      <version>${cclib.version}</version>
-    </dependency>
-
-    <!-- Blueprint utilities to load plutus.json. -->
-    <dependency>
-      <groupId>com.bloxbean.cardano</groupId>
-      <artifactId>cardano-client-plutus</artifactId>
       <version>${cclib.version}</version>
     </dependency>
 
