@@ -26,8 +26,8 @@ Guide optimization of Aiken validators for lower execution costs (CPU/memory) an
 
 ## When NOT to use
 
-- User needs to write a new validator (use write-validator)
-- User needs a security review (use review-contract)
+- User needs to write a new validator (use `write-validator`)
+- User needs a security review (use `review-contract`)
 - The validator has not been tested yet (correctness comes before performance)
 - The optimization would remove a security check
 

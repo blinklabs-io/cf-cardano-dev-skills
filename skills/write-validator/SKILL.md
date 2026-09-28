@@ -24,8 +24,8 @@ Guide the development of a Cardano smart contract from specification to implemen
 
 ## When NOT to use
 
-- User wants to review an existing contract (use review-contract)
-- User wants to optimize an existing contract (use optimize-validator)
+- User wants to review an existing contract (use `review-contract`)
+- User wants to optimize an existing contract (use `optimize-validator`)
 - User wants to build off-chain/transaction building code only
 - User wants infrastructure or node setup help
 

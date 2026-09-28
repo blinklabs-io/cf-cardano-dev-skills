@@ -26,8 +26,8 @@ Help the developer choose the right tools, SDKs, and libraries for their Cardano
 
 ## When NOT to use
 
-- Already chosen tools and needs help using them (use specific tool skills)
 - Building a transaction once the stack is chosen (use `build-transaction`)
+- Setting up a new project once the stack is chosen (use `scaffold-project`)
 - Setting up a devnet (use `setup-devnet` skill)
 - Querying chain data with a specific provider (use `query-chain` skill)
 - Detailed wallet integration steps (use `connect-wallet` skill)

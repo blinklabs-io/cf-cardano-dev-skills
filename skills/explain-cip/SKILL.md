@@ -30,7 +30,7 @@ affect development, and how to implement them.
 - The developer needs to **write a validator** or **build a transaction** — redirect to
   the relevant skill
 - The developer asks about eUTxO concepts — use `explain-eutxo`
-- The question is about Cardano governance participation — use the governance skill
+- The question is about Cardano governance participation — use `governance-guide`
 
 ## Key Principles
 
