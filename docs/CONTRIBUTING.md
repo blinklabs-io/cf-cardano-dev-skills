@@ -236,8 +236,9 @@ Instructions...
       `disallowed-tools` includes `WebFetch WebSearch`
 - [ ] Body uses host-neutral capability language rather than requiring Claude
       or Codex tool names
-- [ ] Bundled-doc paths resolve relative to `SKILL.md`; no host-specific
-      environment variable appears in the shared body
+- [ ] Bundled-doc paths are written `../../docs/sources/...`, relative to
+      `SKILL.md`, and exist (`validate.py` checks both outside fenced code); no
+      host-specific environment variable appears in the shared body
 - [ ] Required safety behavior is stated in the body, not only in
       host-specific frontmatter
 - [ ] Deep content in `references/`, one level only — no nested subdirectories
