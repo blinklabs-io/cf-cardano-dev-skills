@@ -95,7 +95,7 @@ See `references/config-templates.md` for the cardano-client-lib-specific `pom.xm
 # Reads from environment variables; .env.example documents the variable names.
 
 cardano.network=${CARDANO_NETWORK:devnet}
-cardano.devnet.url=${YACI_STORE_URL:http://localhost:10000}
+cardano.devnet.url=${YACI_STORE_URL:http://localhost:8080}
 cardano.blockfrost.project-id=${BLOCKFROST_PROJECT_ID:}
 
 # Path to the Aiken-emitted plutus.json. Monorepo default below; for single-repo
@@ -175,7 +175,7 @@ public final class ChainClient {
         String network = System.getenv().getOrDefault("CARDANO_NETWORK", "devnet");
 
         if ("devnet".equals(network)) {
-            String url = System.getenv().getOrDefault("YACI_STORE_URL", "http://localhost:10000");
+            String url = System.getenv().getOrDefault("YACI_STORE_URL", "http://localhost:8080");
             // Yaci Store exposes a Blockfrost-compatible API on /api/v1.
             var backend = new BFBackendService(url + "/api/v1/", "devnet");
             return new ConfiguredBackend(backend, Networks.testnet());
