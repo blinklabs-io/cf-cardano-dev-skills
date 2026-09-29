@@ -15,7 +15,7 @@ The redeemer is unused: the validator inspects only the datum and the transactio
 
 ## On-chain (Aiken)
 
-Source of truth: `docs/sources/cardano-use-case-templates/vesting/onchain/aiken/validators/vesting.ak`.
+Source of truth: `../../docs/sources/cardano-use-case-templates/vesting/onchain/aiken/validators/vesting.ak`.
 
 Datum shape:
 
@@ -49,7 +49,7 @@ The contract is identical across stacks. The off-chain code differs only in API.
 
 ### Mesh SDK
 
-Source of truth: `docs/sources/cardano-use-case-templates/vesting/offchain/meshjs/vesting.ts`.
+Source of truth: `../../docs/sources/cardano-use-case-templates/vesting/offchain/meshjs/vesting.ts`.
 
 Patterns to lift into your scaffold:
 
@@ -77,7 +77,7 @@ Time on Yaci DevKit: `setValidity` converts with the chain's `slotConfig`, so th
 
 ### cardano-client-lib (Java)
 
-Source of truth: `docs/sources/cardano-use-case-templates/vesting/offchain/ccl-java/Vesting.java`.
+Source of truth: `../../docs/sources/cardano-use-case-templates/vesting/offchain/ccl-java/Vesting.java`.
 
 Patterns to lift:
 
