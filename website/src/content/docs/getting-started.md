@@ -26,6 +26,13 @@ repository itself, which can fall back to an SSH URL and fail with
 `git@github.com: Permission denied (publickey)` even though this repository is
 public and clones fine over HTTPS.
 
+Claude Code auto-updates plugins only from marketplaces with auto-update on,
+and third-party marketplaces like this one start with it off. Turn it on once:
+run `/plugin`, open **Marketplaces**, select **cardano-dev-skills**, and choose
+**Enable auto-update**. To update by hand, run
+`claude plugin update cardano-dev-skills@cardano-dev-skills` from your shell
+and restart.
+
 ## Claude Cowork (desktop, web, mobile)
 
 Cowork uses the same plugin format, so this marketplace works there unchanged.

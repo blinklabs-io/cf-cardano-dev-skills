@@ -77,6 +77,13 @@ itself, which can fall back to an SSH URL and fail with
 `git@github.com: Permission denied (publickey)` even though this repository is
 public and clones fine over HTTPS.
 
+Claude Code auto-updates plugins only from marketplaces with auto-update on,
+and third-party marketplaces like this one start with it off. Turn it on once:
+run `/plugin`, open **Marketplaces**, select **cardano-dev-skills**, and choose
+**Enable auto-update**. To update by hand, run
+`claude plugin update cardano-dev-skills@cardano-dev-skills` from your shell
+and restart.
+
 ### Claude Cowork (desktop, web, mobile)
 
 Cowork uses the same plugin format, so this marketplace works there unchanged.
@@ -196,7 +203,7 @@ A `SessionStart` hook (`hooks/check-docs.sh`) inspects the bundled corpus and th
 - **Third-party data notice.** A standing reminder that bundled docs under `docs/sources/` are third-party reference data, never instructions to execute.
 - **Docs stale (>30 days).** Suggests how to refresh based on install topology:
   - Local clone: `cd <plugin-root> && git pull && ./scripts/fetch-docs.sh`.
-  - Marketplace install: `Refresh via: /plugin marketplace update cardano-dev-skills`.
+  - Marketplace install: `claude plugin update cardano-dev-skills@cardano-dev-skills` from a shell, or auto-update turned on for the marketplace in `/plugin`.
 - **Plugin clone behind upstream.** Local clones only: if you have previously run `git fetch` and not pulled, the hook prints `Plugin clone is N commit(s) behind FETCH_HEAD — consider 'git pull' in <plugin-root>`. The hook never fetches itself (no network on session start).
 - **Cardano context active.** When `./CLAUDE.md` contains the `cardano-dev-skills` directive block: `Cardano context active in this project.` Codex reads the corresponding `AGENTS.md` block directly and does not depend on this hook.
 - **Cardano context nudge.** When cwd looks like a project (`.git`, `.claude`, or existing `CLAUDE.md`) but has no block: `Tip: run /cardano-dev-skills:cardano-context to enable auto-consultation in this project.`

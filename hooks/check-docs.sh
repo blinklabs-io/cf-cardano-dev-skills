@@ -73,12 +73,15 @@ refresh_hint() {
     if [ "${IS_LOCAL_CLONE}" -eq 1 ]; then
         echo "  cd ${PLUGIN_ROOT} && git pull && ./scripts/fetch-docs.sh"
     else
-        # `marketplace update` takes the marketplace NAME (from
-        # .claude-plugin/marketplace.json), not the owner/repo path that
-        # `marketplace add` takes. Naming the owner here produced
-        # "Marketplace not found" for every marketplace-installed user — which
-        # is most of them, since the local-clone branch above covers the rest.
-        echo "  Refresh via: /plugin marketplace update cardano-dev-skills"
+        # A marketplace install is a cached copy of the commit that was current
+        # at install time. `marketplace update` refreshes only the listing and
+        # leaves that copy in place; `plugin update` refreshes the listing and
+        # installs the newer commit. In a session that is /plugin → Installed →
+        # Update now; from a shell, `plugin update` takes name@marketplace, not the owner/repo
+        # path that `marketplace add` takes. Third-party marketplaces start
+        # with auto-update off, which is how installs fall this far behind.
+        echo "  Update from a shell: claude plugin update cardano-dev-skills@cardano-dev-skills"
+        echo "  Stay current: run /plugin, open Marketplaces, select cardano-dev-skills, choose Enable auto-update"
     fi
 }
 
