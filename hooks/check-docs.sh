@@ -76,8 +76,8 @@ refresh_hint() {
         # A marketplace install is a cached copy of the commit that was current
         # at install time. `marketplace update` refreshes only the listing and
         # leaves that copy in place; `plugin update` refreshes the listing and
-        # installs the newer commit. It has no in-session form, so the hint is
-        # a shell command, and it takes name@marketplace, not the owner/repo
+        # installs the newer commit. In a session that is /plugin → Installed →
+        # Update now; from a shell, `plugin update` takes name@marketplace, not the owner/repo
         # path that `marketplace add` takes. Third-party marketplaces start
         # with auto-update off, which is how installs fall this far behind.
         echo "  Update from a shell: claude plugin update cardano-dev-skills@cardano-dev-skills"
