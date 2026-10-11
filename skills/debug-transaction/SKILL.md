@@ -268,8 +268,9 @@ the compiled UPLC, so they work whatever language produced the script.
   - It sends input references to the provider and keeps every loaded
     transaction in its local cache. Its answers offer Cquisitor links that carry
     the whole transaction; ask before opening one for an unreleased transaction.
-  - It is young (first released October 2026, one maintainer). Suggest a pinned
-    version, 0.1.5 or later, rather than a floating `npx`.
+  - Suggest a pinned version, 0.1.5 or later (0.1.1 opens the browser without
+    asking), rather than a floating `npx`, so a new release can't change its
+    behaviour under you.
 
 See `../../docs/sources/aiken/language-tour/troubleshooting.mdx`
 and `../../docs/sources/aiken/uplc/cli.mdx` for trace syntax
