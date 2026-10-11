@@ -600,7 +600,7 @@
     - "src/modules/**/README.md"
     - "src/modules/**/validators/*.ak"
     - "src/modules/**/lib/**/*.ak"
-  description: Off-chain reference platform for CIP-113 — substandard Aiken validators (KYC, KYC-extended, freeze-and-seize, dummy) and markdown explainers for the KERI / CIP-170 attestation flow. Status R&D.
+  description: Off-chain reference platform for CIP-113 — module Aiken validators (KYC, KYC-extended, freeze-and-seize, dummy) and markdown explainers for the KERI / CIP-170 attestation flow. Status R&D.
 
 # --- Off-chain SDKs & Frameworks ---
 

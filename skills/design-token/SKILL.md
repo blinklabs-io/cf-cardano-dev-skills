@@ -36,8 +36,8 @@ for ecosystem compatibility.
 ## Key Principles
 
 1. **Pick the right CIP standard first.** CIP-25 is simple but immutable.
-   CIP-68 enables updatable metadata via reference tokens. CIP-113 (still a
-   draft) makes tokens programmable via shared-custody validation. The choice
+   CIP-68 enables updatable metadata via reference tokens. CIP-113 (accepted,
+   awaiting merge) makes tokens programmable via shared-custody validation. The choice
    affects the entire architecture.
 
 2. **Design the minting policy before the metadata.** The policy determines
@@ -96,12 +96,13 @@ Search `../../docs/sources/` for detailed CIP comparisons.
 - Best for: projects needing updatable metadata, rich fungible tokens,
   or dynamic NFTs
 
-**CIP-113 (Programmable Tokens — draft, unmerged PR #444)**
+**CIP-113 (Programmable Tokens — accepted, PR #444 awaiting merge)**
 - Tokens are held at a shared script address; ownership is tracked by stake
   credential, and validation logic runs on every transfer, mint, and burn
 - An on-chain registry links each token to its transfer/issuance logic;
-  substandards (freeze-and-seize, KYC) plug into the shared framework
-- Most complex; reference implementation is unaudited and not production-ready
+  modules (freeze-and-seize, KYC) plug into the shared framework
+- Most complex. The core on-chain framework has been professionally audited;
+  the modules and the off-chain platform have not
 - Best for: regulated tokens, stablecoins, and compliance-bound assets
 
 See `references/cip-token-standards.md` for a detailed comparison.
