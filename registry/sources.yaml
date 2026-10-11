@@ -911,7 +911,7 @@
   priority: medium
   glob_patterns:
     - "**/*.md"
-  description: Next-gen consensus with Input Endorsers - 30-50x throughput
+  description: Ouroboros Leios (CIP-164) - higher L1 throughput through committee-certified endorser blocks; design, status reports and simulations
 
 # --- Oracles ---
 
