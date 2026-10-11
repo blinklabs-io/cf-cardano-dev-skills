@@ -167,8 +167,9 @@ Off-chain pattern (conceptual):
 
 ### Step 6: Highlight common mistakes
 
-- **Forgetting the datum on outputs:** When sending to a script address, always attach a
-  datum. UTxOs without datums at script addresses are unspendable.
+- **Forgetting the datum on outputs:** When sending to a script address, attach the datum
+  the validator expects. A Plutus V1 or V2 script can never spend an output without a datum;
+  a V3 validator receives `None` and decides for itself, so it must handle that case.
 - **Not checking all conditions:** Validators must check every invariant. If you check the
   signer but not the value, someone can drain the funds to a different address.
 - **Double satisfaction:** When multiple script inputs exist in one transaction, each

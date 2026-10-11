@@ -100,7 +100,7 @@ Comprehensive map of tools, SDKs, and infrastructure in the Cardano developer ec
 | Name | Status | Best For |
 |---|---|---|
 | **cardano-node** | Production | Running a full Cardano node. Required for SPOs and self-hosted infra. |
-| **Dolos** | Experimental | Lightweight data-only node (no block production). Faster sync. |
+| **Dolos** | Production | Lightweight data-only node (no block production). Faster sync. |
 | **Amaru** | Experimental | Alternative node implementation in Rust. |
 | **Dingo** | Experimental | Alternative node implementation in Go, with UTxORPC, Blockfrost-compatible REST, and Mesh APIs served by the node itself. Block production is exercised on public testnets; its README rules out mainnet. |
 | **Mithril** | Production | Fast bootstrapping via snapshot certificates. Sync in minutes, not days. |
@@ -181,8 +181,6 @@ below carry only facts (language, license) and a project's own stated caveats.
 |---|---|---|---|
 | **Eternl** | Browser extension | Yes | Yes |
 | **Lace** | Browser extension | Yes | Yes |
-| **Nami** | Browser extension | Yes | Partial |
-| **Flint** | Browser extension | Yes | Yes |
 | **Vespr** | Mobile + extension | Yes | Yes |
 | **Typhon** | Browser extension | Yes | Yes |
 | **GeroWallet** | Browser extension | Yes | Partial |
