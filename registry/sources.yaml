@@ -563,7 +563,7 @@
     - "**/*.ak"
     - "**/*.ts"
     - "**/*.java"
-  description: Generic blockchain use-case templates implemented across Aiken (on-chain) and Mesh/Evolution/cardano-client-lib (off-chain). Foundation reference set.
+  description: Generic blockchain use-case templates with Aiken validators, Mesh/Evolution/PyCardano/cardano-client-lib off-chain code, and Scalus full-stack versions. Foundation reference set.
 
 - name: CIP-113 Programmable Tokens
   repo: https://github.com/cardano-foundation/cip113-programmable-tokens.git
