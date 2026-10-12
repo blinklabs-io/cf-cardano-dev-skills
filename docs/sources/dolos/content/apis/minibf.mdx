@@ -153,15 +153,18 @@ Dolos provides many, but not all of the Blockfrost endpoints. The following list
 | `/governance/dreps/{drep_id}`                              | Get DRep information                                     |
 | `/governance/dreps/{drep_id}/delegators`                   | Get delegators for a specific DRep                       |
 | `/governance/dreps/{drep_id}/metadata`                     | Get DRep metadata                                        |
+| `/governance/dreps/{drep_id}/updates`                      | Get certificate updates of a DRep                        |
 | `/governance/dreps/{drep_id}/votes`                        | Get votes cast by a DRep                                 |
 | `/governance/proposals`                                    | Get list of governance proposals                         |
 | `/governance/proposals/{tx_hash}/{cert_index}`             | Get governance proposal information                      |
 | `/governance/proposals/{gov_action_id}`                    | Get governance proposal by CIP-129 action id             |
 | `/governance/proposals/{gov_action_id}/metadata`           | Get metadata of a proposal by CIP-129 id                 |
 | `/governance/proposals/{gov_action_id}/parameters`         | Get parameter change of a proposal by CIP-129 id         |
+| `/governance/proposals/{gov_action_id}/votes`              | Get votes of a proposal by CIP-129 id                    |
 | `/governance/proposals/{gov_action_id}/withdrawals`        | Get withdrawals of a proposal by CIP-129 id              |
 | `/governance/proposals/{tx_hash}/{cert_index}/metadata`    | Get metadata of a specific proposal                      |
 | `/governance/proposals/{tx_hash}/{cert_index}/parameters`  | Get parameter change of a specific proposal              |
+| `/governance/proposals/{tx_hash}/{cert_index}/votes`       | Get votes of a specific proposal                         |
 | `/governance/proposals/{tx_hash}/{cert_index}/withdrawals` | Get withdrawals of a specific proposal                   |
 | `/metadata/txs/labels/{label}`                             | Get metadata for transactions with a specific label      |
 | `/metadata/txs/labels/{label}/cbor`                        | Get CBOR metadata for transactions with a specific label |
@@ -172,15 +175,18 @@ Dolos provides many, but not all of the Blockfrost endpoints. The following list
 | `/pools/retired`                                           | Get list of retired pools                                |
 | `/pools/retiring`                                          | Get list of retiring pools                               |
 | `/pools/{id}`                                              | Get information for a specific pool                      |
+| `/pools/{id}/blocks`                                       | Get blocks minted by a specific pool                     |
 | `/pools/{id}/delegators`                                   | Get delegators for a specific pool                       |
 | `/pools/{id}/history`                                      | Get history for a specific pool                          |
 | `/pools/{id}/metadata`                                     | Get metadata for a specific pool                         |
 | `/pools/{id}/relays`                                       | Get relays for a specific pool                           |
 | `/pools/{id}/updates`                                      | Get certificate updates for a specific pool              |
+| `/pools/{id}/votes`                                        | Get votes cast by a specific pool                        |
 | `/scripts/{script_hash}`                                   | Get script information                                   |
 | `/scripts/{script_hash}/json`                              | Get script JSON                                          |
 | `/scripts/{script_hash}/cbor`                              | Get script CBOR                                          |
 | `/scripts/{script_hash}/utxos`                             | Get live UTxOs that hold the script as a reference       |
+| `/scripts/{script_hash}/redeemers`                         | Get redeemers of a specific script                       |
 | `/scripts/datum/{datum_hash}`                              | Get datum by hash                                        |
 | `/scripts/datum/{datum_hash}/cbor`                         | Get datum CBOR by hash                                   |
 | `/tx/submit`                                               | Submit a transaction                                     |
