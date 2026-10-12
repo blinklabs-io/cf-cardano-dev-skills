@@ -26,30 +26,30 @@
 "Aiken ZKP Verifiers": 1d8990536a6b9cff760ce39a7ca8511cfacd879b
 "Amaru": 9a4273855972f9efcfbb84579a3f63084d030eda
 "Apollo": 5238703b9bd66f3c91826c0a155179ed35b28149
-"BLS12-381 Examples and Standards": 0d476d437580214514ee6cda464b65053d6efe6f
+"BLS12-381 Examples and Standards": d0128d81c43665a3d7cafe89a0b379e8e1cdeb09
 "Blockfrost OpenAPI": 05c6d61311f2d4d5c701d029ba702be86d36da69
 "Buildooor": 7551104ea29d5606c2dd00d17c7ff71a2fe28d29
-"CHaP": c565537af48b901fffced0315933176cfbe26ba6
-"CIP-113 Programmable Tokens": 6b75ba3286b4692ca23059ff51285db357fb09c6
-"CIP-113 Programmable Tokens Platform": 88f6b782ff90c5d0bdf6f44b6618f068db4ccbed
+"CHaP": 319e601a524e2a0b56c36f7626591bc92cb4a5e9
+"CIP-113 Programmable Tokens": 369e8c280609208b388c77937dc3a18e02561b0a
+"CIP-113 Programmable Tokens Platform": ab75bd5d16f4c7d5e5a5ced54ec3bf3d5ff775ce
 "CIP-113 SDK (TypeScript)": 547132ccd417be670534098a8b1cb3d5d2715243
 "CIPs": b4a593c960f2751fef2ddc8df28bec7b22c68eb5
-"Cardano Addresses": 6a36be3461325fdf6f3878b994450f8a006dd63a
-"Cardano CLI": 2fe22702f8752915ca5d6988bde92fc45aa6941c
+"Cardano Addresses": f26a05ede007024dc29aa2d7c7bd7b099fe828fe
+"Cardano CLI": b788cd365e3dd6246d9099018f093ba351779f9c
 "Cardano Connect with Wallet": 47ceba88338f19b576bf72251e8158a7883a5e45
 "Cardano Docs": 31616f9ce1cd64d6311a911b6c386681b258a358
 "Cardano GraphQL": fcfe3154115ef176788a60b2eae925ee42aabd7c
-"Cardano Ledger": e1b7e6096134f1317575c768141ef03eb4def633
-"Cardano Ledger API Blaster": 4f80a9f5bd440edf44fe7d6f09e9f14f730cd53f
+"Cardano Ledger": 56ddee12ec768b85d14c62da049a33fc05114323
+"Cardano Ledger API Blaster": 9938562fd452351655fe2f6b63e583c62422687c
 "Cardano Node Antithesis": f3da6d4386bd27c1bed0f21f9d625c1c82da747c
 "Cardano Node Wiki": 2b069655b5cacda7be6c2ac21a4fa159ec6a4c09
 "Cardano Serialization Lib": 6b4253814f1831fee06cda2718fd47174960ace1
 "Cardano Use Case Templates": cbc86fc5d5a25daece94666a9e6f1c48368c1c72
-"Cardano Wallet": 92b57304dfb556d80edf30d75e3f19218e66e891
+"Cardano Wallet": 2fc5c383c94bb907deaa0cd27b1b407f86224b6c
 "Charli3 Pull Oracle Client": 4f90fa3b1d41d6251ff3de246606b1abacc9cda1
 "Charli3 Pull Oracle Contracts": b5e1ecdefc6e3aae324d59898884bcab7d6e0335
 "Charli3 Pull Oracle SDK": acc01827e66c04b7f83c801a4e63603d6e641dea
-"DB-Sync": eb8e862de8f4076523eb4146905bab7eac1d5e1e
+"DB-Sync": ca434ecdfbbf04ed94e424ddbdf0b32bcec403ec
 "Developer Portal": 057f07cb60209552fa2ecba502b6f66e7be52e91
 "Developer Portal Templates": 057f07cb60209552fa2ecba502b6f66e7be52e91
 "Dingo": 0e43f120732929b005c0aceaa093d27c1be18cb1
@@ -64,7 +64,7 @@
 "Lean Blaster": 585c5fc1370196a03cfceec674f5a5ac2ed3c2f2
 "Masumi": 020c3b47153bc110b9d1c6f60cf957aadac25c8c
 "Mesh SDK": b618b3f7a670015f92456d08d868bf32ed7692e6
-"Mesh SDK Packages": 34c1a49c9da398c3d3080eeac9206866b2825752
+"Mesh SDK Packages": d91df8c49a124a859d6415b7552f5b2ed232c652
 "Mithril": 39b2bdb3454cd31cc227bb72daf3de4e960896a8
 "Ogmios": 435189aea2d9a047dc395a6f1cdef737d52f1cbe
 "OpShin": 756a6a102b0bd5778029455719cd6f856ac5d34e
@@ -75,7 +75,7 @@
 "Plinth": 0849ed6a3385d17ca7dacc075b29f15999d490e9
 "Plutarch": 87e11994c45b6af4768e5b6146d9c94879e279b5
 "PyCardano": 877be3ad9a2221fce7eac777c9927430cbc3b868
-"Pyth Lazer Cardano": bd2a4b6f434e9cb6cf8afe32223b4059172039a1
+"Pyth Lazer Cardano": 709e742bfbc6025b1c7b36aa78ecd912cf372c2b
 "SanchoNet": b4ece78e1552ba4e61426fb4fa53aead0e18da4a
 "Scalus": 2eb9f3d6154c68163e1ff98f591504d02fcb6f5d
 "Smart Contract Vulnerabilities": 0fe98a6fc0c08ea6b21361f2d46c5e6a0cd1922a
@@ -84,9 +84,9 @@
 "Yaci DevKit": bafb9d83471a9e3f1afcc4a530b35dd308b731da
 "Yaci Store": 87a20682b2af8ae8978baeae63fe17b853eae069
 "blockfrost-go": 7c2f324c451977a542722ebcb6ec1c70f3d26b1e
-"cardano-client-lib": 83d4cdbf400955a3267aea77c48aba7bff1b2cef
+"cardano-client-lib": 45906b783973b4c44ac6883253af26bdd07bc1b4
 "cardano-js-sdk": 48019e49c826ea77d81be0e2d2907f94406f5e04
 "gOuroboros": 85c7ae47bd7d5f09386ffaf48936175f7c42eb71
-"haskell.nix": 1c415e043348e6a6667accb8adbd445e86a02ade
+"haskell.nix": 630f369f18e7c0637649e4ea5aad20efd7a23e66
 "iohk-nix": 84287dbfebbfb5d36498c9c816e54252927c13c5
-"x402": c84154b5d6a31d77fd5b9dbb01213053fd9cb9eb
+"x402": f8f83309706b14cc696962f0a002eeeb66c3dc26
