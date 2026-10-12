@@ -130,9 +130,8 @@ Both the reference token (100) and user token (222/333/444) share the same
 
 ## CIP-113: Programmable Tokens
 
-**Status:** accepted by the CIP editors and awaiting merge as
-[cardano-foundation/CIPs#444](https://github.com/cardano-foundation/CIPs/pull/444),
-so it is not yet in the official CIPs repo; the PR shows whether it has merged.
+**Status:** Proposed, merged into the CIPs repository through
+[cardano-foundation/CIPs#444](https://github.com/cardano-foundation/CIPs/pull/444).
 The Cardano Foundation's core on-chain framework has been professionally
 audited. The modules and the off-chain platform have not, and have been tested
 only on the Preview testnet: audit any module you deploy. The "Audit and

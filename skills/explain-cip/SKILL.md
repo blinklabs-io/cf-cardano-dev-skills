@@ -242,10 +242,11 @@ governance actions.
 
 ### CIP-113: Programmable Tokens
 
-**Status:** accepted by the CIP editors and awaiting merge as
-[cardano-foundation/CIPs#444](https://github.com/cardano-foundation/CIPs/pull/444),
-so it is not yet in the official CIPs repo or the bundled `cips/` mirror. The
-reference implementation is bundled under `../../docs/sources/cip-113-programmable-tokens/`.
+**Status:** Proposed, merged into the CIPs repository through
+[cardano-foundation/CIPs#444](https://github.com/cardano-foundation/CIPs/pull/444).
+A bundled `cips/` mirror older than the merge has no `CIP-0113/` folder; then point
+the user to https://cips.cardano.org/cip/CIP-0113. The reference implementation is
+bundled under `../../docs/sources/cip-113-programmable-tokens/`.
 
 **Summary:** Defines a standard for tokens with programmable validation logic — rules
 enforced on every transfer, mint, and burn. Tokens are held at a shared script address

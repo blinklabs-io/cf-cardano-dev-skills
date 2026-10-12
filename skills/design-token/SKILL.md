@@ -36,8 +36,8 @@ for ecosystem compatibility.
 ## Key Principles
 
 1. **Pick the right CIP standard first.** CIP-25 is simple but immutable.
-   CIP-68 enables updatable metadata via reference tokens. CIP-113 (accepted,
-   awaiting merge) makes tokens programmable via shared-custody validation. The choice
+   CIP-68 enables updatable metadata via reference tokens. CIP-113 (Proposed)
+   makes tokens programmable via shared-custody validation. The choice
    affects the entire architecture.
 
 2. **Design the minting policy before the metadata.** The policy determines
@@ -96,7 +96,7 @@ Search `../../docs/sources/` for detailed CIP comparisons.
 - Best for: projects needing updatable metadata, rich fungible tokens,
   or dynamic NFTs
 
-**CIP-113 (Programmable Tokens — accepted, PR #444 awaiting merge)**
+**CIP-113 (Programmable Tokens — Proposed)**
 - Tokens are held at a shared script address; ownership is tracked by stake
   credential, and validation logic runs on every transfer, mint, and burn
 - An on-chain registry links each token to its transfer/issuance logic;
@@ -214,8 +214,11 @@ Guide the user through these design choices:
   by default. Time-locked policies make burning impossible after the deadline.
 - **Metadata storage:** IPFS (decentralized, persistent) vs. HTTP URLs
   (centralized, mutable). Prefer IPFS with CID pinning.
-- **Royalties:** CIP-27 defines on-chain royalty info. Marketplaces may
-  or may not enforce it. CIP-113 can enforce royalties at the protocol level.
+- **Royalties:** CIP-27 (policy-wide) and CIP-102 (a CIP-68 royalty token)
+  publish royalty terms on-chain. No ledger rule enforces them, so payment
+  depends on the marketplace. CIP-113 leaves royalties out of its framework;
+  a CIP-113 module can pay them out on transfer, and the issuer writes and
+  audits that module.
 - **Collection grouping:** All tokens under one policy ID form a
   "collection." Use one policy per logical collection.
 
