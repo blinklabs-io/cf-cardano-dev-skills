@@ -110,6 +110,10 @@ See `references/cip-token-standards.md` for a detailed comparison.
 ### Step 4: Design the Minting Policy
 
 The minting policy is a Cardano script that authorizes token creation.
+Its hash is the policy ID: a 28-byte Blake2b-224 digest of a one-byte tag
+followed by the serialized script, with tag `0x00` for a native script and
+`0x01`, `0x02`, `0x03` for Plutus V1, V2, V3. CIP-29's text says Blake2b-192
+for native scripts; the ledger hashes every script with Blake2b-224.
 
 **Native Script Policies (no Plutus needed):**
 
