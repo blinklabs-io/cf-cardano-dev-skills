@@ -260,7 +260,6 @@
     - "*.go"
     - "ledger/*.go"
     - "ledger/common/**/*.go"
-    - "examples/**/*.go"
   description: Go building blocks for Ouroboros/Cardano protocols - mini-protocol implementations, ledger types, CBOR codecs
   website: https://pkg.go.dev/github.com/blinklabs-io/gouroboros
 
