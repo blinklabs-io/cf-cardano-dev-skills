@@ -212,7 +212,10 @@ validator.
 4. In the spending validator, require the exact `Script(stake_script_hash)` key in
    `tx.withdrawals`, with the hash passed in as a validator parameter. Check the key,
    not the amount: the ledger already requires a withdrawal to equal the full reward
-   balance, which stays zero while the credential is not delegated.
+   balance. Don't assume that balance is zero. Governance deposit refunds (CIP-1694)
+   and treasury withdrawals can credit any registered reward account, delegated or not.
+   Read the balance off-chain when building the transaction, and let the `withdraw`
+   handler decide where a non-zero amount may go.
 5. The stake script then runs once per transaction, whatever the number of inputs.
 
 The review checklist in `review-contract` (#13, withdrawal validation bypass) covers
