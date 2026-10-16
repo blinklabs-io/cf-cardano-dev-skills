@@ -15,6 +15,7 @@
 package common
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"slices"
@@ -85,7 +86,32 @@ func decodePlutusScript(script []byte, rejectTrailing bool) ([]byte, error) {
 	return innerScript, nil
 }
 
+// decodePlutusProgram returns the decoded and execution-validated program
+// for innerScript. Programs are cached and shared across callers, so the
+// result must be treated as read-only.
 func decodePlutusProgram(
+	innerScript []byte,
+	ledgerLanguage lang.LanguageVersion,
+	evalContext *cek.EvalContext,
+) (*syn.Program[syn.DeBruijn], error) {
+	if evalContext == nil {
+		return nil, errors.New("evaluation context is required")
+	}
+	return defaultProgramCache.decode(
+		innerScript,
+		ledgerLanguage,
+		evalContext.ProtoMajor,
+		func() (*syn.Program[syn.DeBruijn], error) {
+			return decodePlutusProgramUncached(
+				innerScript,
+				ledgerLanguage,
+				evalContext,
+			)
+		},
+	)
+}
+
+func decodePlutusProgramUncached(
 	innerScript []byte,
 	ledgerLanguage lang.LanguageVersion,
 	evalContext *cek.EvalContext,
@@ -126,11 +152,27 @@ func (s *ScriptRef) UnmarshalCBOR(data []byte) error {
 	if _, err := cbor.Decode(data, &tmpTag); err != nil {
 		return err
 	}
+	if tmpTag.Number != cbor.CborTagCbor {
+		return fmt.Errorf("unexpected script reference tag %d", tmpTag.Number)
+	}
 	innerCbor, ok := tmpTag.Content.([]byte)
 	if !ok {
 		return errors.New("unexpected tag type")
 	}
+	tagHeaderLength, err := cborTagHeaderLength(data)
+	if err != nil {
+		return err
+	}
+	if err := validateDefiniteByteString(
+		data[tagHeaderLength:],
+		"script reference CBOR",
+	); err != nil {
+		return err
+	}
 	// Determine script type
+	if err := ValidateCBORArrayLength(innerCbor, 2, "script reference"); err != nil {
+		return err
+	}
 	var rawScript struct {
 		cbor.StructAsArray
 		Type uint
@@ -226,6 +268,28 @@ func (s PlutusV1Script) Evaluate(
 	budget ExUnits,
 	evalContext *cek.EvalContext,
 ) (ExUnits, error) {
+	return s.EvaluateContext(
+		context.Background(),
+		datum,
+		redeemer,
+		scriptContext,
+		budget,
+		evalContext,
+	)
+}
+
+// EvaluateContext executes a PlutusV1 script and stops when ctx is canceled.
+func (s PlutusV1Script) EvaluateContext(
+	ctx context.Context,
+	datum data.PlutusData,
+	redeemer data.PlutusData,
+	scriptContext data.PlutusData,
+	budget ExUnits,
+	evalContext *cek.EvalContext,
+) (ExUnits, error) {
+	if err := ctx.Err(); err != nil {
+		return ExUnits{}, err
+	}
 	// Normalize the script-visible arguments rather than trusting every
 	// caller to do it. Decode preserves each container's definite/indefinite
 	// length choice so a decoded value re-encodes to its original bytes, but
@@ -274,15 +338,13 @@ func (s PlutusV1Script) Evaluate(
 		Argument: contextTerm,
 	}
 	// Execute wrapped program
-	machine := cek.NewMachine[syn.DeBruijn](
+	consumedBudget, runErr := runPooledMachineContext(
+		ctx,
 		cek.LanguageVersionV1,
-		200,
 		evalContext,
+		machineBudget,
+		wrappedProgram,
 	)
-	machine.ExBudget = machineBudget
-	_, runErr := machine.Run(wrappedProgram)
-	// Always calculate consumed budget, even on error
-	consumedBudget := machineBudget.Sub(&machine.ExBudget)
 	usedExUnits.Memory = consumedBudget.Mem
 	usedExUnits.Steps = consumedBudget.Cpu
 	if runErr != nil {
@@ -318,6 +380,28 @@ func (s PlutusV2Script) Evaluate(
 	budget ExUnits,
 	evalContext *cek.EvalContext,
 ) (ExUnits, error) {
+	return s.EvaluateContext(
+		context.Background(),
+		datum,
+		redeemer,
+		scriptContext,
+		budget,
+		evalContext,
+	)
+}
+
+// EvaluateContext executes a PlutusV2 script and stops when ctx is canceled.
+func (s PlutusV2Script) EvaluateContext(
+	ctx context.Context,
+	datum data.PlutusData,
+	redeemer data.PlutusData,
+	scriptContext data.PlutusData,
+	budget ExUnits,
+	evalContext *cek.EvalContext,
+) (ExUnits, error) {
+	if err := ctx.Err(); err != nil {
+		return ExUnits{}, err
+	}
 	// Normalize the script-visible arguments rather than trusting every
 	// caller to do it. Decode preserves each container's definite/indefinite
 	// length choice so a decoded value re-encodes to its original bytes, but
@@ -366,15 +450,13 @@ func (s PlutusV2Script) Evaluate(
 		Argument: contextTerm,
 	}
 	// Execute wrapped program
-	machine := cek.NewMachine[syn.DeBruijn](
+	consumedBudget, runErr := runPooledMachineContext(
+		ctx,
 		cek.LanguageVersionV2,
-		200,
 		evalContext,
+		machineBudget,
+		wrappedProgram,
 	)
-	machine.ExBudget = machineBudget
-	_, runErr := machine.Run(wrappedProgram)
-	// Always calculate consumed budget, even on error
-	consumedBudget := machineBudget.Sub(&machine.ExBudget)
 	usedExUnits.Memory = consumedBudget.Mem
 	usedExUnits.Steps = consumedBudget.Cpu
 	if runErr != nil {
@@ -407,6 +489,24 @@ func (s PlutusV3Script) Evaluate(
 	budget ExUnits,
 	evalContext *cek.EvalContext,
 ) (ExUnits, error) {
+	return s.EvaluateContext(
+		context.Background(),
+		scriptContext,
+		budget,
+		evalContext,
+	)
+}
+
+// EvaluateContext executes a PlutusV3 script and stops when ctx is canceled.
+func (s PlutusV3Script) EvaluateContext(
+	ctx context.Context,
+	scriptContext data.PlutusData,
+	budget ExUnits,
+	evalContext *cek.EvalContext,
+) (ExUnits, error) {
+	if err := ctx.Err(); err != nil {
+		return ExUnits{}, err
+	}
 	var usedExUnits ExUnits
 	var err error
 	var program *syn.Program[syn.DeBruijn]
@@ -436,15 +536,13 @@ func (s PlutusV3Script) Evaluate(
 		Argument: contextTerm,
 	}
 	// Execute wrapped program
-	machine := cek.NewMachine[syn.DeBruijn](
+	consumedBudget, runErr := runPooledMachineContext(
+		ctx,
 		cek.LanguageVersionV3,
-		200,
 		evalContext,
+		machineBudget,
+		wrappedProgram,
 	)
-	machine.ExBudget = machineBudget
-	_, runErr := machine.Run(wrappedProgram)
-	// Always calculate consumed budget, even on error
-	consumedBudget := machineBudget.Sub(&machine.ExBudget)
 	usedExUnits.Memory = consumedBudget.Mem
 	usedExUnits.Steps = consumedBudget.Cpu
 	if runErr != nil {
@@ -477,6 +575,24 @@ func (s PlutusV4Script) Evaluate(
 	budget ExUnits,
 	evalContext *cek.EvalContext,
 ) (ExUnits, error) {
+	return s.EvaluateContext(
+		context.Background(),
+		scriptContext,
+		budget,
+		evalContext,
+	)
+}
+
+// EvaluateContext executes a PlutusV4 script and stops when ctx is canceled.
+func (s PlutusV4Script) EvaluateContext(
+	ctx context.Context,
+	scriptContext data.PlutusData,
+	budget ExUnits,
+	evalContext *cek.EvalContext,
+) (ExUnits, error) {
+	if err := ctx.Err(); err != nil {
+		return ExUnits{}, err
+	}
 	var usedExUnits ExUnits
 	var err error
 	var program *syn.Program[syn.DeBruijn]
@@ -502,14 +618,13 @@ func (s PlutusV4Script) Evaluate(
 		Function: program.Term,
 		Argument: contextTerm,
 	}
-	machine := cek.NewMachine[syn.DeBruijn](
+	consumedBudget, runErr := runPooledMachineContext(
+		ctx,
 		cek.LanguageVersionV4,
-		200,
 		evalContext,
+		machineBudget,
+		wrappedProgram,
 	)
-	machine.ExBudget = machineBudget
-	_, runErr := machine.Run(wrappedProgram)
-	consumedBudget := machineBudget.Sub(&machine.ExBudget)
 	usedExUnits.Memory = consumedBudget.Mem
 	usedExUnits.Steps = consumedBudget.Cpu
 	if runErr != nil {
@@ -1027,6 +1142,20 @@ type NativeScriptPubkey struct {
 
 // UnmarshalCBOR requires the signature hash to match its ledger-defined width.
 func (s *NativeScriptPubkey) UnmarshalCBOR(data []byte) error {
+	var fields []cbor.RawMessage
+	if _, err := cbor.Decode(data, &fields); err != nil {
+		return err
+	}
+	if len(fields) != 2 {
+		return fmt.Errorf("native script pubkey must contain 2 fields, got %d", len(fields))
+	}
+	if err := validateFixedLengthByteString(
+		fields[1],
+		Blake2b224Size,
+		"native script key hash",
+	); err != nil {
+		return err
+	}
 	type nativeScriptPubkeyAlias NativeScriptPubkey
 	var decoded nativeScriptPubkeyAlias
 	if _, err := cbor.Decode(data, &decoded); err != nil {

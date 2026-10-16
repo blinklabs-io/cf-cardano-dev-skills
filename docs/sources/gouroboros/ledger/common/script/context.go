@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"math/big"
 	"slices"
+	"sync"
 
 	"github.com/blinklabs-io/gouroboros/cbor"
 	lcommon "github.com/blinklabs-io/gouroboros/ledger/common"
@@ -111,6 +112,41 @@ func NewScriptContextV3(
 type TxInfo interface {
 	isTxInfo()
 	ToPlutusData() data.PlutusData
+}
+
+// CachedTxInfo is a TxInfo whose PlutusData conversion is computed once and
+// shared by every script context built from it. A transaction's TxInfo is the
+// same for each of its redeemers; only the purpose differs, so building the
+// contexts from one CachedTxInfo converts the TxInfo once per transaction
+// rather than once per redeemer. The returned PlutusData must be treated as
+// read-only. It is safe for concurrent use.
+type CachedTxInfo struct {
+	inner TxInfo
+	once  sync.Once
+	data  data.PlutusData
+}
+
+func (*CachedTxInfo) isTxInfo() {}
+
+// NewCachedTxInfo wraps txInfo so that its ToPlutusData conversion runs at
+// most once. Wrapping an already cached TxInfo returns it unchanged.
+func NewCachedTxInfo(txInfo TxInfo) *CachedTxInfo {
+	if cached, ok := txInfo.(*CachedTxInfo); ok {
+		return cached
+	}
+	return &CachedTxInfo{inner: txInfo}
+}
+
+// Unwrap returns the TxInfo being cached.
+func (c *CachedTxInfo) Unwrap() TxInfo {
+	return c.inner
+}
+
+func (c *CachedTxInfo) ToPlutusData() data.PlutusData {
+	c.once.Do(func() {
+		c.data = c.inner.ToPlutusData()
+	})
+	return c.data
 }
 
 type TxInfoV1 struct {
@@ -1080,7 +1116,7 @@ func certificateToPlutusData(
 			data.NewConstr(1),
 		)
 	case *lcommon.RegistrationCertificate:
-		deposit := Option[*big.Int]{Value: big.NewInt(c.Amount)}.ToPlutusData()
+		deposit := Option[*big.Int]{Value: new(big.Int).SetUint64(c.Amount)}.ToPlutusData()
 		if protocolVersionMajor == lcommon.ProtocolVersionConway {
 			deposit = Option[*big.Int]{}.ToPlutusData()
 		}
@@ -1096,7 +1132,7 @@ func certificateToPlutusData(
 			data.NewConstr(1),
 		)
 	case *lcommon.DeregistrationCertificate:
-		refund := Option[*big.Int]{Value: big.NewInt(c.Amount)}.ToPlutusData()
+		refund := Option[*big.Int]{Value: new(big.Int).SetUint64(c.Amount)}.ToPlutusData()
 		if protocolVersionMajor == lcommon.ProtocolVersionConway {
 			refund = Option[*big.Int]{}.ToPlutusData()
 		}
@@ -1141,7 +1177,7 @@ func certificateToPlutusData(
 				0,
 				toPlutusData(c.PoolKeyHash),
 			),
-			data.NewInteger(big.NewInt(c.Amount)),
+			data.NewInteger(new(big.Int).SetUint64(c.Amount)),
 		)
 	case *lcommon.VoteRegistrationDelegationCertificate:
 		return data.NewConstr(
@@ -1151,7 +1187,7 @@ func certificateToPlutusData(
 				1,
 				c.Drep.ToPlutusData(),
 			),
-			data.NewInteger(big.NewInt(c.Amount)),
+			data.NewInteger(new(big.Int).SetUint64(c.Amount)),
 		)
 	case *lcommon.StakeVoteRegistrationDelegationCertificate:
 		return data.NewConstr(
@@ -1162,13 +1198,13 @@ func certificateToPlutusData(
 				c.PoolKeyHash.ToPlutusData(),
 				c.Drep.ToPlutusData(),
 			),
-			data.NewInteger(big.NewInt(c.Amount)),
+			data.NewInteger(new(big.Int).SetUint64(c.Amount)),
 		)
 	case *lcommon.RegistrationDrepCertificate:
 		return data.NewConstr(
 			4,
 			c.DrepCredential.ToPlutusData(),
-			data.NewInteger(big.NewInt(c.Amount)),
+			data.NewInteger(new(big.Int).SetUint64(c.Amount)),
 		)
 	case *lcommon.UpdateDrepCertificate:
 		return data.NewConstr(
@@ -1179,7 +1215,7 @@ func certificateToPlutusData(
 		return data.NewConstr(
 			6,
 			c.DrepCredential.ToPlutusData(),
-			data.NewInteger(big.NewInt(c.Amount)),
+			data.NewInteger(new(big.Int).SetUint64(c.Amount)),
 		)
 	case *lcommon.PoolRegistrationCertificate:
 		return data.NewConstr(
