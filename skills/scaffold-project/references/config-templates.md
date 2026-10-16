@@ -63,8 +63,8 @@ artifacts/
 # --- Secrets ---
 # never committed; .env.example is the committed template
 .env
-# framework-specific local overrides
-.env.*.local
+# framework local overrides (.env.local, .env.development.local, ...)
+.env*.local
 # dev signing keys from Yaci DevKit
 .keys/
 # signing keys
