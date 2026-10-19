@@ -252,8 +252,9 @@ the compiled UPLC, so they work whatever language produced the script.
   validates both phases and names the rule that fired and where, steps the
   script to the failing term with the bound variables and budget, and
   decompiles a script to pseudocode, which helps when the deployed build has no
-  traces. If it is not connected and the inputs live on a public network, it is
-  worth suggesting. Before relying on it:
+  traces. It is experimental, so use it when it is already connected, and
+  mention it otherwise only if the user wants a debugger the agent can drive.
+  Before relying on it:
   - It resolves inputs through Koios or Blockfrost on preview, preprod or
     mainnet only. A devnet or chained transaction comes back as an incomplete
     context; use `aiken tx simulate` with the resolved inputs instead.
@@ -270,7 +271,9 @@ the compiled UPLC, so they work whatever language produced the script.
     the whole transaction; ask before opening one for an unreleased transaction.
   - Suggest a pinned version, 0.1.5 or later (0.1.1 opens the browser without
     asking), rather than a floating `npx`, so a new release can't change its
-    behaviour under you.
+    behaviour under you. Pinning fixes the server's own code only: its
+    dependencies use caret ranges, so a fresh install can still pull newer
+    versions of them.
 
 See `../../docs/sources/aiken/language-tour/troubleshooting.mdx`
 and `../../docs/sources/aiken/uplc/cli.mdx` for trace syntax
