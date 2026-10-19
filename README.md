@@ -84,11 +84,14 @@ run `/plugin`, open **Marketplaces**, select **cardano-dev-skills**, and choose
 `claude plugin update cardano-dev-skills@cardano-dev-skills` from your shell
 and restart.
 
-### Claude app (web, desktop, mobile)
+### Claude app, formerly Claude Cowork (web, desktop, mobile)
 
 The Claude app's Chat side uses the same plugin format as Claude Code, so this
 marketplace works there unchanged. Installing here also syncs the plugin to Claude
 Code sessions signed in with the same account.
+
+Hooks don't run in chat, so the SessionStart hook's notices (docs age, context
+status) appear only in Cowork, where your app still has it, and in Claude Code.
 
 1. Open **Customize** and go to the **Plugins** tab.
 2. Under **Personal plugins**, click **+**, then **Add marketplace**.
