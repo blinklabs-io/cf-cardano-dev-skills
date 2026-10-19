@@ -5711,3 +5711,83 @@ own copy of the documents it lists.
 - `/proposal/get`, `/drep/info` and the history detail route read the store first and fetch the one
   document themselves when it is not there.
 
+## D168 — The pdf backend drops budget discussions; a static archive replaces them
+
+**Date:** 2026-10-08
+**Amends:** D138 (scope: budget discussions leave it) and D165 (the Strapi data copied in no longer
+includes budget discussions).
+
+- Budget discussions are no longer a live feature. The 2025 budget proposals are a read-only archive
+  in the frontend: static JSON under `/budget-proposals-2025/`, split from a mainnet Strapi export,
+  with the list, every version, the final DRep poll totals and the comments. It replaces the BD API
+  for reading; nothing replaces it for writing.
+- Order: the frontend change landed first (#4280), so no released frontend calls a BD route when the
+  backend stops serving them.
+- `govtool-pdf-backend` removes the BD models, tables, routes, seeds and tests: `/api/bds`,
+  `/api/bd/versions/:id`, `/api/bd-drafts`, `/api/bd-polls`, `/api/bd-poll-votes`, the five `bd-*`
+  lookups and `/api/country-lists` answer 404. Comments target proposals only: `bd_proposal_id` is
+  gone from the comment attributes and filters, and `comments.proposal_id` is NOT NULL.
+- One new migration, `20261008000000_remove_budget_discussions`, applies to databases that hold BD
+  rows: it deletes BD comments (their replies and reports cascade), drops `bd_master_id` and the
+  comment target CHECK, then drops the BD and BD-only lookup tables with RESTRICT, so a missed
+  dependency fails the migration instead of being dropped with it. No BD data is exported by it;
+  the archive is the record.
+- SPEC.md keeps the removed section numbers (§5.4, §8.8–§8.11) and Δ numbers as empty entries, so
+  existing references stay valid.
+- Community tools that read the BD API lose it; the archive's files are the replacement.
+
+## D169 — A failing anchor backs off, and its report list shows the latest ten
+
+**Date:** 2026-10-15
+**Amends:** D121 (the error cache stays at one minute) and the metadata-service spec's §2.7 lifetime
+note. D123 (reports are kept forever) and D125 (anyone may retry once a minute) stand.
+
+- With a one-minute replay, any page view or backend fill after the minute fetched a failing url
+  again and stored a report. An anchor pointing at a private address had 914 reports on dev in eight
+  days, and the report dropdown listed them all.
+- A failure for (url, hash) is now replayed for longer the more often the pair has failed: 1 minute
+  after the first failure, then 10 minutes, 30 minutes, 1 hour, 6 hours, and 24 hours from the sixth
+  on. Content under the hash still wins first, so the count is of failures in a row. The schedule is
+  `ERROR_BACKOFF_MS` in the service's `config.ts`.
+- Retry (`refresh`) and `Cache-Control: invalidate` keep the one-minute refresh window, so a
+  publisher who fixed the url can check it at once. `verify` still fetches every time.
+- `listReports` returns the latest 10 reports, newest first (`REPORT_LIST_LIMIT`). Older reports stay
+  stored and readable by id.
+
+## D170 — A DRep searched by id brings its document, and directory rows carry `doNotList`
+
+**Date:** 2026-10-16
+**Amends:** D167 ("a request never fetches") for `/drep/list` searches by DRep id.
+
+- A DRep is looked up by id as soon as it registers: its dashboard card and its own page. The warmer
+  reaches its document only on a later pass, so a row read from the store alone had no name or
+  payment address. A search by id now fetches the documents the store has no answer for, as
+  `/drep/info` does. It names one DRep, so the fetch is one document. Name searches and the
+  whole directory still read the store only.
+- Directory rows carry `doNotList` (CIP-119), read from the DRep's document, `false` until it is
+  read. The Haskell backend never sent the field (its SQL did not select `do_not_list`), so the
+  frontend's filter on it did nothing on real data.
+- `listed=true` is the directory's view: the backend leaves out `doNotList` DReps before the total
+  and the page, so pages stay full. Without it every DRep is listed, since the DRep's own page, its
+  dashboard and the edit form look it up by id through the same route.
+
+## D171 — The backend redacts the middle of IP addresses
+
+**Date:** 2026-10-18
+**Amends:** D116, which hid nothing in a fetch report, addresses included.
+**Said:** "Backend will return ip as nn.xx.xx.nn -> redacting the mid 2 numbers in case of errors for
+privacy concerns."
+
+- An IPv4 address keeps its first and last octet: `203.0.113.45` is sent as `203.xx.xx.45`. An IPv6
+  address keeps its first and last group the same way: `2606:4700::6810:84e5` is sent as
+  `2606:xx:xx:84e5`. An IPv4-mapped IPv6 address redacts its IPv4 part.
+- The metadata routes (`/metadata/resolve`, `/metadata/retry`, `/metadata/reports` and
+  `/metadata/reports/:id`) redact the DNS answers, the connect attempts, the response headers and every
+  message. They leave the document body, the urls, the ids and the hashes as the service sent them: the
+  body is the publisher's content, the urls are what the chain or the publisher's server named, and ids
+  and hashes are sent back by callers.
+- Error bodies built from data-layer errors (`ChainDataError`, `PinningError` and the `CriticalError`
+  fallback) redact their messages and details, since a provider or database error names the host it
+  failed to reach.
+- Redaction is at the backend's edge only. The metadata service stores and logs full addresses, and the
+  backend's own logs keep them, so an operator can still investigate.
