@@ -134,12 +134,14 @@ Filters: by address, policy, asset, transaction metadata, block slot range.
 ‡Through Koios's `/ogmios` passthrough (`evaluateTransaction`).
 
 **Yaci Store** is a modular JVM indexer: enable only the stores you need (UTxO,
-transaction, assets, governance, ...), each backed by your own Postgres — hence
-direct SQL access. It exposes a **Blockfrost-compatible REST API** (`/blocks`,
-`/epochs` including `latest/parameters`, `/txs`, `/tx/submit`, `/addresses`,
-`/accounts`, `/assets`, `/scripts`, `/metadata`, `/utils/txs/evaluate`), so any
-Blockfrost client — including cardano-client-lib's `BFBackendService` — points at
-it unchanged.
+transaction, assets, governance, ...), each backed by your own database
+(PostgreSQL, MySQL or H2) — hence direct SQL access. Its own REST API is served
+under `/api/v1/`. The 3.x line adds an opt-in **Blockfrost-compatible REST API**
+(the `blockfrost` profile, under `/api/v1/blockfrost`; `/blocks`, `/epochs`,
+`/txs`, `/tx/submit`, `/addresses`, `/accounts`, `/assets`, `/scripts`,
+`/metadata`, `/utils/txs/evaluate`), so a Blockfrost client — including
+cardano-client-lib's `BFBackendService` — works against it once its base URL
+includes that prefix. See `../../docs/sources/yaci-store-mcp/docs/app/docs/v3/blockfrost/`.
 
 Its "events" are **Spring application events consumed in-process**: you write
 listeners and processors inside your own Spring Boot app to build custom indexers.

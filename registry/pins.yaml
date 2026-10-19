@@ -83,6 +83,7 @@
 "UTxORPC Go SDK": 6527e965734806ce18908c10ece0bb8d6b254ab1
 "Yaci DevKit": e67d385799b40aab0992d0b3616dfd8c14ed5ff8
 "Yaci Store": ef856acaf5199679d6eea5275853c6497bd65a61
+"Yaci Store MCP": 5842de3c7755c2aba2c54a4f629fd691324e0f2b
 "blockfrost-go": 7c2f324c451977a542722ebcb6ec1c70f3d26b1e
 "cardano-client-lib": dfd8540d91a17f18a0b93320f9aa020eec43fbdb
 "cardano-js-sdk": 48019e49c826ea77d81be0e2d2907f94406f5e04

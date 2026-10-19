@@ -323,8 +323,29 @@
   priority: medium
   glob_patterns:
     - "**/*.mdx"
-  description: Modular Java indexer with Blockfrost-compatible APIs
+  description: Modular Java indexer and Spring Boot library (2.x docs)
   website: https://store.yaci.xyz
+
+- name: Yaci Store MCP
+  repo: https://github.com/bloxbean/yaci-store.git
+  # Second entry for the same repo, like "Evolution SDK Packages". The
+  # analytics store, MCP server and Blockfrost-compatible API ship only in the
+  # 3.x line, whose docs live under docs/app/docs/v3/ while "Yaci Store"
+  # mirrors v2. Only those three feature trees come from v3, so the rest of
+  # the v3 docs cannot be mistaken for the stable guidance.
+  docs_path: "."
+  format: markdown
+  format_overrides:
+    "**/*.mdx": mdx
+  category: infrastructure
+  priority: medium
+  glob_patterns:
+    - aggregates/mcp-server/README.md
+    - aggregates/analytics-query/README.md
+    - config/application-mcp.yml
+    - "docs/app/docs/v3/analytics/**/*.mdx"
+    - "docs/app/docs/v3/blockfrost/**/*.mdx"
+  description: Yaci Store 3.x analytics store, MCP server and Blockfrost-compatible API docs, plus the mcp profile config
 
 - name: Masumi
   repo: https://github.com/masumi-network/masumi-docs.git
