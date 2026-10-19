@@ -32,6 +32,98 @@ import (
 // VotingProcedures is a convenience type to avoid needing to duplicate the full type definition everywhere
 type VotingProcedures map[*Voter]map[*GovActionId]VotingProcedure
 
+// MarshalCBOR follows cardano-ledger's ordering of voter constructors and
+// hashes, then governance action transaction IDs and indices.
+func (vps VotingProcedures) MarshalCBOR() ([]byte, error) {
+	if vps == nil {
+		return []byte{0xf6}, nil
+	}
+	voters := make([]*Voter, 0, len(vps))
+	for voter := range vps {
+		voters = append(voters, voter)
+	}
+	sort.Slice(voters, func(i, j int) bool {
+		if voters[i] == nil {
+			return voters[j] != nil
+		}
+		if voters[j] == nil {
+			return false
+		}
+		leftOrder := voterLedgerOrder(voters[i].Type)
+		rightOrder := voterLedgerOrder(voters[j].Type)
+		if leftOrder != rightOrder {
+			return leftOrder < rightOrder
+		}
+		return bytes.Compare(voters[i].Hash[:], voters[j].Hash[:]) < 0
+	})
+	ret := appendLedgerMapHeader(nil, uint64(len(voters)))
+	for _, voter := range voters {
+		actions := vps[voter]
+		encodedVoter, err := cbor.Encode(voter)
+		if err != nil {
+			return nil, fmt.Errorf("encode voting procedure voter: %w", err)
+		}
+		ret = append(ret, encodedVoter...)
+		if actions == nil {
+			ret = append(ret, 0xf6)
+			continue
+		}
+		actionIds := make([]*GovActionId, 0, len(actions))
+		for actionId := range actions {
+			actionIds = append(actionIds, actionId)
+		}
+		sort.Slice(actionIds, func(i, j int) bool {
+			left, right := actionIds[i], actionIds[j]
+			if left == nil {
+				return right != nil
+			}
+			if right == nil {
+				return false
+			}
+			if comparison := bytes.Compare(
+				left.TransactionId[:],
+				right.TransactionId[:],
+			); comparison != 0 {
+				return comparison < 0
+			}
+			return left.GovActionIdx < right.GovActionIdx
+		})
+		ret = appendLedgerMapHeader(ret, uint64(len(actionIds)))
+		for _, actionId := range actionIds {
+			encodedActionId, err := cbor.Encode(actionId)
+			if err != nil {
+				return nil, fmt.Errorf("encode voting procedure action id: %w", err)
+			}
+			encodedProcedure, err := cbor.Encode(actions[actionId])
+			if err != nil {
+				return nil, fmt.Errorf("encode voting procedure: %w", err)
+			}
+			ret = append(ret, encodedActionId...)
+			ret = append(ret, encodedProcedure...)
+		}
+		ret = appendLedgerMapBreak(ret, uint64(len(actionIds)))
+	}
+	ret = appendLedgerMapBreak(ret, uint64(len(voters)))
+	return ret, nil
+}
+
+func voterLedgerOrder(voterType uint8) int {
+	switch voterType {
+	case VoterTypeConstitutionalCommitteeHotScriptHash:
+		return 0
+	case VoterTypeConstitutionalCommitteeHotKeyHash:
+		return 1
+	case VoterTypeDRepScriptHash:
+		return 2
+	case VoterTypeDRepKeyHash:
+		return 3
+	case VoterTypeStakingPoolKeyHash:
+		return 4
+	default:
+		return 5 + int(voterType)
+	}
+}
+
 func (vps *VotingProcedures) UnmarshalCBOR(cborData []byte) error {
 	if len(cborData) == 1 && (cborData[0] == 0xf6 || cborData[0] == 0xf7) {
 		return errors.New("voting procedures cannot be CBOR null or undefined")
@@ -462,6 +554,13 @@ func (vp *VotingProcedure) UnmarshalCBOR(cborData []byte) error {
 	if len(cborData) == 1 && (cborData[0] == 0xf6 || cborData[0] == 0xf7) {
 		return errors.New("voting procedure cannot be CBOR null or undefined")
 	}
+	if err := ValidateCBORArrayLength(
+		cborData,
+		2,
+		"voting procedure",
+	); err != nil {
+		return err
+	}
 	type tVotingProcedure VotingProcedure
 	var tmp tVotingProcedure
 	if _, err := cbor.Decode(cborData, &tmp); err != nil {
@@ -805,6 +904,40 @@ type TreasuryWithdrawalGovAction struct {
 }
 
 func (a *TreasuryWithdrawalGovAction) UnmarshalCBOR(cborData []byte) error {
+	if err := ValidateCBORArrayLength(
+		cborData,
+		3,
+		"treasury withdrawal governance action",
+	); err != nil {
+		return err
+	}
+	fields := make([]cbor.RawMessage, 3)
+	if _, err := cbor.Decode(cborData, &fields); err != nil {
+		return err
+	}
+	var rawWithdrawals map[*Address]cbor.RawMessage
+	if _, err := cbor.Decode(fields[1], &rawWithdrawals); err != nil {
+		return fmt.Errorf("decode treasury withdrawals: %w", err)
+	}
+	for address, amountCBOR := range rawWithdrawals {
+		if address == nil {
+			return errors.New("nil withdrawal address")
+		}
+		if len(amountCBOR) == 0 || amountCBOR[0]&cbor.CborTypeMask != 0 {
+			return errors.New("treasury withdrawal amount must be an unsigned integer")
+		}
+		var amount uint64
+		if _, err := cbor.DecodeExact(amountCBOR, &amount); err != nil {
+			return fmt.Errorf("decode treasury withdrawal amount: %w", err)
+		}
+	}
+	if err := ValidateNullOrFixedLengthByteStringCBOR(
+		fields[2],
+		Blake2b224Size,
+		"treasury withdrawal policy hash",
+	); err != nil {
+		return err
+	}
 	type tTreasuryWithdrawalGovAction TreasuryWithdrawalGovAction
 	var tmp tTreasuryWithdrawalGovAction
 	if _, err := cbor.Decode(cborData, &tmp); err != nil {
@@ -813,8 +946,37 @@ func (a *TreasuryWithdrawalGovAction) UnmarshalCBOR(cborData []byte) error {
 	if err := ValidateWithdrawalAddresses(tmp.Withdrawals); err != nil {
 		return fmt.Errorf("treasury withdrawal: %w", err)
 	}
+	if tmp.PolicyHash != nil && len(tmp.PolicyHash) != Blake2b224Size {
+		return fmt.Errorf(
+			"treasury withdrawal policy hash must be %d bytes, got %d",
+			Blake2b224Size,
+			len(tmp.PolicyHash),
+		)
+	}
 	*a = TreasuryWithdrawalGovAction(tmp)
 	return nil
+}
+
+func (a TreasuryWithdrawalGovAction) MarshalCBOR() ([]byte, error) {
+	if err := ValidateWithdrawalAddresses(a.Withdrawals); err != nil {
+		return nil, fmt.Errorf("treasury withdrawal: %w", err)
+	}
+	if a.PolicyHash != nil && len(a.PolicyHash) != Blake2b224Size {
+		return nil, fmt.Errorf(
+			"treasury withdrawal policy hash must be %d bytes, got %d",
+			Blake2b224Size,
+			len(a.PolicyHash),
+		)
+	}
+	withdrawals, err := EncodeRewardAccountMap(a.Withdrawals)
+	if err != nil {
+		return nil, fmt.Errorf("encode treasury withdrawals: %w", err)
+	}
+	return cbor.Encode([]any{
+		a.Type,
+		cbor.RawMessage(withdrawals),
+		a.PolicyHash,
+	})
 }
 
 func (a *TreasuryWithdrawalGovAction) ToPlutusData() data.PlutusData {
@@ -918,7 +1080,64 @@ type UpdateCommitteeGovAction struct {
 	Quorum      cbor.Rat
 }
 
+// MarshalCBOR encodes committee removals as a tag-258 set in ledger order.
+func (a UpdateCommitteeGovAction) MarshalCBOR() ([]byte, error) {
+	credentials := append([]Credential(nil), a.Credentials...)
+	sort.Slice(credentials, func(i, j int) bool {
+		return committeeCredentialLess(credentials[i], credentials[j])
+	})
+	credentialSet := cbor.NewSetType(credentials, true)
+	epochCredentials := make([]*Credential, 0, len(a.CredEpochs))
+	for credential := range a.CredEpochs {
+		epochCredentials = append(epochCredentials, credential)
+	}
+	sort.Slice(epochCredentials, func(i, j int) bool {
+		left, right := epochCredentials[i], epochCredentials[j]
+		if left == nil {
+			return right != nil
+		}
+		if right == nil {
+			return false
+		}
+		return committeeCredentialLess(*left, *right)
+	})
+	epochMap := appendLedgerMapHeader(nil, uint64(len(epochCredentials)))
+	for _, credential := range epochCredentials {
+		var encodedCredential []byte
+		if credential == nil {
+			encodedCredential = []byte{0xf6}
+		} else {
+			var err error
+			encodedCredential, err = cbor.Encode(credential)
+			if err != nil {
+				return nil, fmt.Errorf("encode update committee credential: %w", err)
+			}
+		}
+		encodedEpoch, err := cbor.Encode(a.CredEpochs[credential])
+		if err != nil {
+			return nil, fmt.Errorf("encode update committee epoch: %w", err)
+		}
+		epochMap = append(epochMap, encodedCredential...)
+		epochMap = append(epochMap, encodedEpoch...)
+	}
+	epochMap = appendLedgerMapBreak(epochMap, uint64(len(epochCredentials)))
+	return cbor.Encode([]any{
+		a.Type,
+		a.ActionId,
+		&credentialSet,
+		cbor.RawMessage(epochMap),
+		a.Quorum,
+	})
+}
+
 func (a *UpdateCommitteeGovAction) UnmarshalCBOR(cborData []byte) error {
+	if err := ValidateCBORArrayLength(
+		cborData,
+		5,
+		"update committee governance action",
+	); err != nil {
+		return err
+	}
 	type tUpdateCommitteeGovAction UpdateCommitteeGovAction
 	var tmp tUpdateCommitteeGovAction
 	if _, err := cbor.Decode(cborData, &tmp); err != nil {
@@ -1089,6 +1308,48 @@ type NewConstitutionGovAction struct {
 		Anchor     GovAnchor
 		ScriptHash []byte
 	}
+}
+
+func (a *NewConstitutionGovAction) UnmarshalCBOR(cborData []byte) error {
+	if err := ValidateCBORArrayLength(
+		cborData,
+		3,
+		"new constitution governance action",
+	); err != nil {
+		return err
+	}
+	fields := make([]cbor.RawMessage, 3)
+	if _, err := cbor.Decode(cborData, &fields); err != nil {
+		return err
+	}
+	if len(fields[1]) == 1 && fields[1][0] == 0xf7 {
+		return errors.New("new constitution previous action ID cannot be CBOR undefined")
+	}
+	if err := ValidateDefiniteCBORArrayLength(
+		fields[2],
+		2,
+		"constitution",
+	); err != nil {
+		return err
+	}
+	constitution := make([]cbor.RawMessage, 2)
+	if _, err := cbor.Decode(fields[2], &constitution); err != nil {
+		return err
+	}
+	if err := ValidateNullOrFixedLengthByteStringCBOR(
+		constitution[1],
+		Blake2b224Size,
+		"constitution script hash",
+	); err != nil {
+		return err
+	}
+	type tNewConstitutionGovAction NewConstitutionGovAction
+	var decoded tNewConstitutionGovAction
+	if _, err := cbor.Decode(cborData, &decoded); err != nil {
+		return err
+	}
+	*a = NewConstitutionGovAction(decoded)
+	return nil
 }
 
 func (a *NewConstitutionGovAction) ToPlutusData() data.PlutusData {

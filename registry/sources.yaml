@@ -260,7 +260,6 @@
     - "*.go"
     - "ledger/*.go"
     - "ledger/common/**/*.go"
-    - "examples/**/*.go"
   description: Go building blocks for Ouroboros/Cardano protocols - mini-protocol implementations, ledger types, CBOR codecs
   website: https://pkg.go.dev/github.com/blinklabs-io/gouroboros
 
@@ -509,17 +508,6 @@
     - "packages/**/README.md"
     - "packages/**/*.md"
   description: Smart contract framework by Harmonic Labs (TypeScript)
-
-- name: Smart Contract Vulnerabilities
-  repo: https://github.com/easy1staking-com/cardano-smart-contract-vulnerabilities.git
-  docs_path: "."
-  format: markdown
-  category: smart-contracts
-  priority: high
-  glob_patterns:
-    - CARDANO-SMART-CONTRACT-VULNERABILITIES.md
-    - README.md
-  description: 26 documented eUTxO vulnerability patterns with mitigations
 
 - name: Plutarch
   repo: https://github.com/Plutonomicon/plutarch-plutus.git
@@ -865,7 +853,37 @@
     - README.md
   description: Lean4 model of Plutus V1–V3 script-context types and ledger-rule predicates; how-to for importing compiled UPLC and discharging validator properties
 
+- name: cip30-test-wallet
+  repo: https://github.com/Lichtstaub/cip30-test-wallet.git
+  docs_path: "."
+  format: markdown
+  category: testing
+  priority: medium
+  glob_patterns:
+    - README.md
+    - "docs/*.md"
+    - "quirks/*.md"
+  description: Playwright test wallet for Cardano dApps with transaction and message signing and configurable wallet behaviours
+
 # --- Governance (Conway Era) ---
+
+- name: Cardano Constitution
+  repo: https://github.com/IntersectMBO/cardano-constitution.git
+  docs_path: "."
+  format: markdown
+  category: governance
+  priority: high
+  glob_patterns:
+    - "cardano-constitution-*/*.md"
+  vetting_exception: >-
+    Document of record: the repo changes only when the Constitution is
+    amended on-chain, so commit recency and issue activity say nothing about
+    its health. Nothing checks currency automatically. The weekly refresh
+    mirrors whatever Intersect pushes (a newly enacted version arrives as a
+    new directory the glob matches), and the assess-constitutionality skill
+    hands the user an anchor-hash check to run against the chain.
+  description: Intersect's mirror of record for the on-chain Cardano Constitution (one directory per enacted version)
+  website: https://cardano.org/constitution/
 
 - name: GovTool
   repo: https://github.com/IntersectMBO/govtool.git

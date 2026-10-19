@@ -24,7 +24,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/blinklabs-io/bursa"
 	"github.com/blinklabs-io/dingo/chain"
 	"github.com/blinklabs-io/dingo/database"
 	"github.com/blinklabs-io/dingo/database/models"
@@ -47,21 +46,32 @@ import (
 )
 
 func (n *Node) validateBlockProducerStartup() (*forging.PoolCredentials, error) {
-	if _, err := n.blockProducerShelleyGenesis(); err != nil {
+	slot, supported, err := n.blockProducerStartupClock()
+	if err != nil {
 		return nil, err
 	}
+	return n.validateBlockProducerStartupForClock(slot, supported)
+}
+
+// blockProducerStartupClock resolves the wall-clock slot to judge the
+// operational certificate against, and whether the confirmed era history
+// supports it; see validateBlockProducerStartupForClock.
+func (n *Node) blockProducerStartupClock() (uint64, bool, error) {
+	if _, err := n.blockProducerShelleyGenesis(); err != nil {
+		return 0, false, err
+	}
 	if n.ledgerState == nil {
-		return nil, errors.New(
+		return 0, false, errors.New(
 			"block producer mode requires ledger state for current slot",
 		)
 	}
 	if _, err := n.ledgerState.CurrentSlot(); err != nil {
 		if !errors.Is(err, ledger.ErrBeforeGenesis) {
-			return nil, fmt.Errorf("compute current slot: %w", err)
+			return 0, false, fmt.Errorf("compute current slot: %w", err)
 		}
 		// Clock before genesis: preserve the historical hard fail through the
 		// strict preflight (an opcert can never be "current" before genesis).
-		return n.validateBlockProducerStartupForClock(0, true)
+		return 0, true, nil
 	}
 	// The current wall-clock slot only reliably places an operational
 	// certificate in time when the confirmed era history spans the wall clock.
@@ -74,12 +84,18 @@ func (n *Node) validateBlockProducerStartup() (*forging.PoolCredentials, error) 
 	supportedSlot, supported, err := n.ledgerState.
 		WallClockSlotFromConfirmedHistory()
 	if err != nil {
-		return nil, fmt.Errorf(
+		return 0, false, fmt.Errorf(
 			"wall-clock slot from confirmed history: %w",
 			err,
 		)
 	}
-	return n.validateBlockProducerStartupForClock(supportedSlot, supported)
+	return supportedSlot, supported, nil
+}
+
+func (n *Node) setEquivocationSelfPoolID(creds *forging.PoolCredentials) {
+	if creds != nil {
+		n.equivocation.setSelfPoolID(creds.GetPoolID().String())
+	}
 }
 
 func (n *Node) validateBlockProducerStartupAtSlot(
@@ -207,8 +223,7 @@ func (n *Node) validateBlockProducerCredentialMaterial(
 ) (*forging.PoolCredentials, error) {
 	creds := forging.NewPoolCredentials()
 	if n.config.shelleyKESAgentSocket != "" {
-		if err := n.loadBlockProducerCredentialsFromAgent(
-			creds,
+		if err := n.loadBlockProducerCredentialsFromAgent(creds,
 			currentSlot,
 		); err != nil {
 			return nil, fmt.Errorf(
@@ -267,7 +282,7 @@ func (n *Node) startKESAgentServeKey(
 	creds *forging.PoolCredentials,
 	startupSlot uint64,
 ) error {
-	opCertKey, err := bursa.LoadKeyFromFile(
+	opCertKey, err := forging.LoadOperationalCertificateFile(
 		n.config.shelleyOperationalCertificate,
 	)
 	if err != nil {
@@ -402,7 +417,7 @@ func (n *Node) agentInstallSlot(fallbackSlot uint64) uint64 {
 // lifetime of the client. There is no background loop in this mode -- the
 // agent evolves its own key internally on every Sign call.
 func (n *Node) startKESAgentSign(creds *forging.PoolCredentials) error {
-	opCertKey, err := bursa.LoadKeyFromFile(
+	opCertKey, err := forging.LoadOperationalCertificateFile(
 		n.config.shelleyOperationalCertificate,
 	)
 	if err != nil {
@@ -473,6 +488,102 @@ func (n *Node) blockProducerContext() context.Context {
 		return n.ctx
 	}
 	return context.Background()
+}
+
+// ReloadBlockProducerCredentials re-reads the VRF, KES and operational
+// certificate files, validates them exactly as startup does, and swaps them
+// into the running block producer. Any failure leaves the loaded credentials
+// in place and forging uninterrupted. It is refused while startup, shutdown,
+// or a live restore or truncate is in progress.
+func (n *Node) ReloadBlockProducerCredentials() error {
+	// The reload reads n.ledgerState and the live credentials, both of which
+	// those operations replace, from its own goroutine. Holding the gates for
+	// the whole reload is acceptable where a probe's would not be: it runs
+	// once per operator-initiated rotation, not on every probe interval.
+	release, err := n.tryLifecycleGates()
+	if err != nil {
+		return err
+	}
+	defer release()
+	slot, supported, err := n.blockProducerStartupClock()
+	if err != nil {
+		return err
+	}
+	return n.reloadBlockProducerCredentials(
+		slot,
+		supported,
+		n.validateBlockProducerLedger,
+	)
+}
+
+// reloadBlockProducerCredentials is ReloadBlockProducerCredentials with the
+// clock and the ledger cross-check supplied. The replacement is loaded into
+// credentials of its own and only moved into the live set once every check has
+// passed, because loading into the live set fails closed on error, which would
+// stop a healthy producer.
+func (n *Node) reloadBlockProducerCredentials(
+	slot uint64,
+	supported bool,
+	ledgerCheck func(*forging.PoolCredentials) error,
+) error {
+	live := n.blockProducerCreds.Load()
+	if live == nil {
+		return errors.New("block producer credentials are not loaded")
+	}
+	if n.config.shelleyKESAgentSocket != "" {
+		return errors.New(
+			"block producer credentials come from a KES agent; rotate the key through the agent",
+		)
+	}
+	if !supported {
+		return errors.New(
+			"credential reload requires a wall-clock slot supported by confirmed era history",
+		)
+	}
+	next, err := n.validateBlockProducerStartupForClock(slot, supported)
+	if err != nil {
+		return fmt.Errorf("validate reloaded credentials: %w", err)
+	}
+	// ReplaceWith empties next on success, so this only wipes a replacement
+	// that was refused.
+	defer next.Close()
+	if err := ledgerCheck(next); err != nil {
+		return fmt.Errorf("reloaded credentials failed ledger check: %w", err)
+	}
+	oldCounter, oldKESPeriod := opCertCounterAndPeriod(live.GetOpCert())
+	if err := live.ReplaceWith(next); err != nil {
+		return fmt.Errorf("install reloaded credentials: %w", err)
+	}
+	newCounter, newKESPeriod := opCertCounterAndPeriod(live.GetOpCert())
+	n.config.logger.Info(
+		"block producer credentials reloaded",
+		"component", "node",
+		"pool_id", live.GetPoolID().String(),
+		"old_opcert_counter", oldCounter,
+		"new_opcert_counter", newCounter,
+		"old_opcert_kes_period", oldKESPeriod,
+		"new_opcert_kes_period", newKESPeriod,
+		"opcert_expiry_period", live.OpCertExpiryPeriod(),
+	)
+	return nil
+}
+
+// opCertCounterAndPeriod reads the fields a reload logs; both are zero for
+// credentials that carry no certificate.
+func opCertCounterAndPeriod(opCert *forging.OpCert) (uint64, uint64) {
+	if opCert == nil {
+		return 0, 0
+	}
+	return opCert.IssueNumber, opCert.KESPeriod
+}
+
+// closeBlockProducerCredentials zeroizes the live credentials and forgets
+// them. Callers stop the forger, the leader election and the KES agent client
+// first, since each reads from or installs into the credentials.
+func (n *Node) closeBlockProducerCredentials() {
+	if creds := n.blockProducerCreds.Swap(nil); creds != nil {
+		creds.Close()
+	}
 }
 
 // closeKESAgentClient stops the serve-key background loop (if any) and
@@ -687,6 +798,96 @@ func (n *Node) handleGenesisSnapshotError(err error) error {
 	)
 }
 
+// applyForgeTuning is the runtime mapping for operator-configured forge knobs.
+// Keeping the mapping together lets its test catch any setting that would
+// otherwise stop affecting the forger when configuration wiring changes.
+func applyForgeTuning(fc *forging.ForgerConfig, cfg *Config) {
+	fc.ForgeSyncToleranceSlots = cfg.forgeSyncToleranceSlots
+	fc.ForgeStaleGapThresholdSlots = cfg.forgeStaleGapThresholdSlots
+	fc.ForgeUpstreamStalenessSlots = cfg.forgeUpstreamStalenessSlots
+	fc.ForgeAppliedTipStalenessSlots = cfg.forgeAppliedTipStalenessSlots
+	fc.ForgeEndorserBlockStalenessSlots = cfg.forgeEndorserBlockStalenessSlots
+	fc.ForgeEBSelectionReserve = cfg.forgeEBSelectionReserve
+	fc.ForgeEBMaxTxRefs = cfg.forgeEBMaxTxRefs
+	fc.ForgeEBMaxBytes = cfg.forgeEBMaxBytes
+}
+
+// startBlockProducer validates the operator's credentials, starts leader
+// election and the block forger, and returns Run's startup-cleanup stack with
+// their stop appended.
+//
+// The stop is appended immediately after credential validation because that
+// step may start a KES agent loop, and every later startup check can fail.
+// Nil-guarded stops also cover failures while validating ledger credentials
+// or starting the forger.
+//
+// The stack is returned rather than mutated in place because append may
+// reallocate; the caller must use the returned slice on both the success and
+// the error path.
+func (n *Node) startBlockProducer(
+	ctx context.Context,
+	started []func(),
+) ([]func(), error) {
+	//nolint:contextcheck // the KES agent loop is bound to the node lifecycle context, not this call
+	creds, err := n.validateBlockProducerStartup()
+	if err != nil {
+		return started, fmt.Errorf(
+			"block producer startup validation failed: %w",
+			err,
+		)
+	}
+	n.blockProducerCreds.Store(creds)
+	n.setEquivocationSelfPoolID(creds)
+	started = append(started, func() {
+		if n.blockForger != nil {
+			n.blockForger.Stop()
+		}
+		n.closeKESAgentClient()
+		if n.leaderElection != nil {
+			logErrIfNotNil(
+				n.config.logger,
+				"failed to stop leader election during cleanup",
+				n.leaderElection.Stop(),
+			)
+		}
+		n.closeBlockProducerCredentials()
+	})
+	// Cross-check loaded credentials against ledger state. Mismatch
+	// against on-chain pool registration is fatal; "not yet
+	// registered" is a warning so operators can stage credentials
+	// before submitting the registration cert.
+	if err := n.validateBlockProducerLedger(creds); err != nil {
+		return started, fmt.Errorf(
+			"block producer credentials failed ledger check: %w",
+			err,
+		)
+	}
+	if err := n.initBlockForger(ctx, creds); err != nil {
+		return started, fmt.Errorf(
+			"failed to initialize block forger: %w",
+			err,
+		)
+	}
+	// Enable Leios vote emission when a vote signing key is
+	// configured (experimental, leios mode only)
+	if err := n.enableLeiosVoting(creds); err != nil {
+		return started, fmt.Errorf("failed to enable leios voting: %w", err)
+	}
+	// Wire forger's slot tracker into ledger state for slot
+	// battle detection. The forger is created after the ledger
+	// state, so we use the late-binding setter.
+	if n.blockForger != nil {
+		n.ledgerState.SetForgedBlockChecker(
+			n.blockForger.SlotTracker(),
+		)
+		n.ledgerState.SetForgingEnabled(true)
+		n.ledgerState.SetSlotBattleRecorder(
+			n.blockForger,
+		)
+	}
+	return started, nil
+}
+
 // initBlockForger initializes the block forger for production mode.
 // This requires VRF, KES, and OpCert key files to be configured.
 func (n *Node) initBlockForger(
@@ -732,13 +933,12 @@ func (n *Node) initBlockForger(
 	stakeProvider := &stakeDistributionAdapter{ledgerState: n.ledgerState}
 	epochProvider := &epochInfoAdapter{ledgerState: n.ledgerState}
 
-	// Get VRF secret key from credentials
-	vrfSKey := creds.GetVRFSKey()
-
-	// Create leader election with real stake distribution
+	// Create leader election with real stake distribution. It takes the VRF
+	// seed from the credentials per schedule computation instead of holding
+	// a second copy.
 	election := leader.NewElection(
 		poolKeyHash,
-		vrfSKey,
+		creds.GetVRFSKey,
 		stakeProvider,
 		epochProvider,
 		n.eventBus,
@@ -783,6 +983,7 @@ func (n *Node) initBlockForger(
 	}
 	blockForged := n.ledgerState.RecordForgedBlock
 	if n.ouroboros() != nil {
+		//nolint:contextcheck // This observer publishes node-lifetime Leios work; Ouroboros drains its GC worker before storage replacement or Close.
 		blockForged = func(block gledger.Block, blockCbor []byte, latency time.Duration) {
 			n.ledgerState.RecordForgedBlock(block, blockCbor, latency)
 			if header, ok := block.Header().(*gdijkstra.DijkstraBlockHeader); ok {
@@ -814,15 +1015,15 @@ func (n *Node) initBlockForger(
 
 	// Always enforce aggregate reference-script limits before AddBlock.
 	// Full self-validation (header crypto, body-hash, per-tx ledger checks)
-	// runs too unless the operator explicitly opts out (issue #3528: fail
-	// closed by default).
+	// runs too unless the operator explicitly opts out (fail closed by
+	// default).
 	blockValidator := newForgedBlockValidator(
 		n.ledgerState,
 		n.config.validateForgedBlock,
 	)
 
 	// Create the block forger with the real leader election
-	forger, err := forging.NewBlockForger(forging.ForgerConfig{
+	forgerCfg := forging.ForgerConfig{
 		Mode:             forging.ModeProduction,
 		Logger:           n.config.logger,
 		Credentials:      creds,
@@ -839,33 +1040,42 @@ func (n *Node) initBlockForger(
 		// mkCurrentBlockContext's EQ case. The primary chain supplies the
 		// fork context; LedgerState arbitrates with the same Praos
 		// comparison a peer's competing block goes through.
-		ChainContext:                       n.chainManager.PrimaryChain(),
-		SiblingAdopter:                     n.ledgerState,
-		ForgeSyncToleranceSlots:            n.config.forgeSyncToleranceSlots,
-		ForgeStaleGapThresholdSlots:        n.config.forgeStaleGapThresholdSlots,
-		ForgePrimaryChainTipToleranceSlots: n.config.forgePrimaryChainTipToleranceSlots,
-		ForgeUpstreamStalenessSlots:        n.config.forgeUpstreamStalenessSlots,
-		ForgeAppliedTipStalenessSlots:      n.config.forgeAppliedTipStalenessSlots,
-		ForgeEndorserBlockStalenessSlots:   n.config.forgeEndorserBlockStalenessSlots,
+		ChainContext:   n.chainManager.PrimaryChain(),
+		SiblingAdopter: n.ledgerState,
 		// Closure, not a method value: n.ouroboros is rebuilt live, so this
 		// resolves the current instance when the forge loop asks.
 		LeiosVerifiedEbSlot: func() uint64 {
 			return n.ouroboros().MaxVerifiedEndorserBlockSlot()
 		},
-		BlockValidator:                  blockValidator,
-		ForgeFence:                      forgeFence,
-		PromRegistry:                    n.config.promRegistry,
-		LeiosProduceChecker:             leiosChecker,
-		LeiosEBBroadcaster:              leiosEBCaster,
-		LeiosMempool:                    leiosMempool,
-		LeiosTxValidator:                n.ledgerState,
+		BlockValidator:      blockValidator,
+		ForgeFence:          forgeFence,
+		PromRegistry:        n.config.promRegistry,
+		LeiosProduceChecker: leiosChecker,
+		LeiosEBBroadcaster:  leiosEBCaster,
+		LeiosMempool:        leiosMempool,
+		LeiosTxValidator:    n.ledgerState,
+		LeiosAnnouncementValidator: func(
+			ctx context.Context,
+			header lcommon.BlockHeader,
+		) error {
+			o := n.ouroboros()
+			if o == nil {
+				return errOuroborosNotStarted
+			}
+			return classifyLeiosAnnouncementValidationError(
+				o.ValidateLeiosEndorserBlockForHeader(ctx, header),
+			)
+		},
 		LeiosCertificateProvider:        leiosCerts,
 		LeiosParentAnnouncementProvider: leiosParent,
+		LeiosCertificationTimingChecker: n.ledgerState,
 		OpCertLedgerView: blockProducerLedgerView{
 			ls: n.ledgerState,
 		},
 		EraParams: n.ledgerState,
-	})
+	}
+	applyForgeTuning(&forgerCfg, &n.config)
+	forger, err := forging.NewBlockForger(forgerCfg)
 	if err != nil {
 		// Stop election to prevent goroutine leak
 		_ = election.Stop()
@@ -889,6 +1099,19 @@ func (n *Node) initBlockForger(
 	)
 
 	return nil
+}
+
+func classifyLeiosAnnouncementValidationError(err error) error {
+	switch {
+	case errors.Is(err, ledger.ErrInvalidLeiosEndorserBlockTransactions):
+		return errors.Join(forging.ErrInvalidLeiosAnnouncement, err)
+	case errors.Is(err, ledger.ErrLeiosValidationParentUnavailable),
+		errors.Is(err, ledger.ErrLeiosValidationParentSuperseded),
+		errors.Is(err, ledger.ErrLedgerViewStorageFault):
+		return errors.Join(forging.ErrLeiosAnnouncementUnavailable, err)
+	default:
+		return err
+	}
 }
 
 type mempoolTxView struct {
@@ -979,7 +1202,7 @@ type blockBroadcaster struct {
 	logger *slog.Logger
 }
 
-func (b *blockBroadcaster) AddBlock(
+func (b *blockBroadcaster) AddBlock(ctx context.Context,
 	block gledger.Block,
 	_ []byte,
 ) error {
@@ -989,7 +1212,7 @@ func (b *blockBroadcaster) AddBlock(
 	if b.chain == nil {
 		return errors.New("chain unavailable")
 	}
-	if err := b.chain.AddLocalBlock(block); err != nil {
+	if err := b.chain.AddLocalBlock(ctx, block); err != nil {
 		return fmt.Errorf("chain rejected proposed block: %w", err)
 	}
 
@@ -1023,7 +1246,7 @@ func (a *stakeDistributionAdapter) getStakeDistribution(
 	if db == nil {
 		return nil, errors.New("database unavailable")
 	}
-	txn := db.MetadataTxn(false)
+	txn := db.MetadataTxn(context.Background(), false)
 	if txn == nil {
 		return nil, errors.New("metadata transaction unavailable")
 	}
@@ -1046,7 +1269,7 @@ func (a *stakeDistributionAdapter) getStakeDistribution(
 //
 // Two defects are fixed here, and both are load-bearing for consensus:
 //
-// dingo #3814 -- the denominator comes from LedgerView.GetTotalActiveStake,
+// Denominator -- the denominator comes from LedgerView.GetTotalActiveStake,
 // a txn-scoped wrapper over Metadata().GetTotalActiveStake, which is the
 // same store accessor ledger/verify_header.go resolves the denominator
 // through when it checks an incoming header's leader eligibility.
@@ -1065,7 +1288,7 @@ func (a *stakeDistributionAdapter) getStakeDistribution(
 // decline a slot it is genuinely eligible for. Resolving both through one
 // accessor removes the second derivation entirely.
 //
-// dingo #3815 -- both values are read through one db.MetadataTxn and one
+// Atomicity -- both values are read through one db.MetadataTxn and one
 // LedgerView. Opening a transaction per value let a snapshot re-capture land
 // between them, yielding a sigma whose halves come from different writes.
 func (a *stakeDistributionAdapter) GetPoolAndTotalActiveStake(
@@ -1079,7 +1302,7 @@ func (a *stakeDistributionAdapter) GetPoolAndTotalActiveStake(
 	if db == nil {
 		return 0, 0, errors.New("database unavailable")
 	}
-	txn := db.MetadataTxn(false)
+	txn := db.MetadataTxn(context.Background(), false)
 	if txn == nil {
 		return 0, 0, errors.New("metadata transaction unavailable")
 	}
@@ -1124,7 +1347,7 @@ func (a *stakeDistributionAdapter) GetPoolAndTotalActiveStake(
 
 // The forging adapter must resolve sigma through the atomic pair accessor.
 // A drift back to two independent reads, or to summing the mark rows for the
-// denominator, is the pair of defects dingo #3814 and #3815 describe; make it
+// denominator, is the pair of defects described above; make it
 // a compile error rather than a silent consensus divergence.
 var _ leader.StakeDistributionProvider = (*stakeDistributionAdapter)(nil)
 
@@ -1135,8 +1358,8 @@ type epochInfoAdapter struct {
 
 // computeSchedule discovers the exact-rational coefficient with a runtime type
 // assertion and silently falls back to the float64 accessor when it fails,
-// which yields a strictly larger leadership threshold than the reference node's
-// (dingo #2798). Make that drift a compile error;
+// which yields a strictly larger leadership threshold than the reference
+// node's. Make that drift a compile error;
 // TestEpochInfoAdapterProvidesExactActiveSlotCoeff covers the same pairing.
 var _ leader.ActiveSlotCoeffRatProvider = (*epochInfoAdapter)(nil)
 
@@ -1144,8 +1367,11 @@ func (a *epochInfoAdapter) CurrentEpoch() uint64 {
 	return a.ledgerState.CurrentEpoch()
 }
 
-func (a *epochInfoAdapter) EpochNonce(epoch uint64) []byte {
-	return a.ledgerState.EpochNonce(epoch)
+func (a *epochInfoAdapter) EpochNonce(
+	ctx context.Context,
+	epoch uint64,
+) []byte {
+	return a.ledgerState.EpochNonce(ctx, epoch)
 }
 
 func (a *epochInfoAdapter) NextEpochNonceReadyEpoch() (uint64, bool) {
@@ -1243,6 +1469,14 @@ func (a *slotClockAdapter) ChainTip() ocommon.Point {
 	return a.ledgerState.Tip().Point
 }
 
+func (a *slotClockAdapter) ChainTipSnapshot() ochainsync.Tip {
+	return a.ledgerState.Tip()
+}
+
+func (a *slotClockAdapter) ForgeTipSnapshot() (ochainsync.Tip, int) {
+	return a.ledgerState.ForgeTipSnapshot()
+}
+
 // ChainTipHash satisfies the deprecated forging.ChainTipHashProvider. The
 // forger no longer calls it: it takes the tip hash from ChainTip above,
 // which returns slot and hash from one snapshot. Kept so the adapter still
@@ -1263,6 +1497,12 @@ func (a *slotClockAdapter) PrimaryChainTip() ocommon.Point {
 	return a.ledgerState.PrimaryChainTip().Point
 }
 
+func (a *slotClockAdapter) PrimaryChainTipRelation(
+	point ocommon.Point,
+) (ochainsync.Tip, uint64, bool, error) {
+	return a.ledgerState.PrimaryChainTipRelation(point)
+}
+
 func (a *slotClockAdapter) NextSlotTime() (time.Time, error) {
 	return a.ledgerState.NextSlotTime()
 }
@@ -1275,6 +1515,14 @@ func (a *slotClockAdapter) UpstreamSyncStatus() (uint64, bool) {
 	return a.ledgerState.UpstreamSyncStatus()
 }
 
+func (a *slotClockAdapter) UpstreamSyncTip() (ochainsync.Tip, bool) {
+	return a.ledgerState.UpstreamSyncTip()
+}
+
+func (a *slotClockAdapter) SecurityParam() int {
+	return a.ledgerState.SecurityParam()
+}
+
 // leiosPipelineAdapter adapts leios.PipelineManager and the primary chain to
 // the narrow Leios interfaces the forge loop expects.
 type leiosPipelineAdapter struct {
@@ -1285,7 +1533,11 @@ type leiosPipelineAdapter struct {
 
 type leiosParentChain interface {
 	Tip() ochainsync.Tip
-	BlockByPoint(ocommon.Point, *database.Txn) (models.Block, error)
+	BlockByPoint(
+		context.Context,
+		ocommon.Point,
+		*database.Txn,
+	) (models.Block, error)
 }
 
 func (a *leiosPipelineAdapter) MayProduceEndorserBlock(
@@ -1329,7 +1581,7 @@ func (a *leiosPipelineAdapter) MarkEndorserBlockEmbedded(
 	a.mgr.MarkEmbedded(ebSlot, ebHash)
 }
 
-func (a *leiosPipelineAdapter) ParentLeiosAnnouncement() (
+func (a *leiosPipelineAdapter) ParentLeiosAnnouncement(ctx context.Context) (
 	lcommon.Blake2b256,
 	lcommon.Blake2b256,
 	bool,
@@ -1344,7 +1596,7 @@ func (a *leiosPipelineAdapter) ParentLeiosAnnouncement() (
 	if len(tip.Point.Hash) == 0 {
 		return lcommon.Blake2b256{}, lcommon.Blake2b256{}, false, nil
 	}
-	block, err := a.chain.BlockByPoint(tip.Point, nil)
+	block, err := a.chain.BlockByPoint(ctx, tip.Point, nil)
 	if err != nil {
 		return lcommon.Blake2b256{}, lcommon.Blake2b256{}, false, fmt.Errorf(
 			"resolve parent block: %w",
@@ -1359,7 +1611,13 @@ func (a *leiosPipelineAdapter) ParentLeiosAnnouncement() (
 		)
 	}
 	hash, _, ok := leiosheader.ReferencedEndorserBlock(decoded.Header())
-	rbHash := lcommon.NewBlake2b256(tip.Point.Hash)
+	rbHash, err := lcommon.NewBlake2b256Checked(tip.Point.Hash)
+	if err != nil {
+		return lcommon.Blake2b256{}, lcommon.Blake2b256{}, false, fmt.Errorf(
+			"parent block hash: %w",
+			err,
+		)
+	}
 	return rbHash, hash, ok, nil
 }
 
@@ -1372,8 +1630,8 @@ type forgedBlockValidatorAdapter struct {
 }
 
 type forgedBlockValidationState interface {
-	ValidateForgedBlock(gledger.Block, []byte) error
-	ValidateBlockReferenceScripts(gledger.Block) error
+	ValidateForgedBlock(context.Context, gledger.Block, []byte) error
+	ValidateBlockReferenceScripts(context.Context, gledger.Block) error
 }
 
 func newForgedBlockValidator(
@@ -1386,14 +1644,14 @@ func newForgedBlockValidator(
 	}
 }
 
-func (a *forgedBlockValidatorAdapter) ValidateForgedBlock(
+func (a *forgedBlockValidatorAdapter) ValidateForgedBlock(ctx context.Context,
 	block gledger.Block,
 	blockCbor []byte,
 ) error {
 	if !a.fullValidation {
-		return a.ledgerState.ValidateBlockReferenceScripts(block)
+		return a.ledgerState.ValidateBlockReferenceScripts(ctx, block)
 	}
-	return a.ledgerState.ValidateForgedBlock(block, blockCbor)
+	return a.ledgerState.ValidateForgedBlock(ctx, block, blockCbor)
 }
 
 // epochNonceAdapter adapts ledger.LedgerState to forging.EpochNonceProvider.
@@ -1413,6 +1671,9 @@ func (a *epochNonceAdapter) EpochForSlot(slot uint64) (uint64, error) {
 	return epoch.EpochId, nil
 }
 
-func (a *epochNonceAdapter) EpochNonce(epoch uint64) []byte {
-	return a.ledgerState.EpochNonce(epoch)
+func (a *epochNonceAdapter) EpochNonce(
+	ctx context.Context,
+	epoch uint64,
+) []byte {
+	return a.ledgerState.EpochNonce(ctx, epoch)
 }

@@ -66,7 +66,8 @@ genesisBootstrap:
   # 0 auto-derives the density window from Shelley genesis params (3k/f).
   windowSlots: 0
   # Independent peers that must report the same recent blocks before a fast
-  # source may drive Genesis selection. 0 disables corroboration (density-only).
+  # source may drive Genesis selection. The default is 1. Setting 0 explicitly
+  # disables corroboration (density-only).
   # Set this to the number of independent snapshot/ledger peers you expect to
   # corroborate the fast source.
   corroborationPeers: 2
@@ -132,6 +133,17 @@ metadata and relay endpoints are validated before outbound startup; malformed
 snapshots fail startup rather than falling back. If a validated snapshot
 produces no peers accepted by peer governance, startup falls back to topology
 `bootstrapPeers` (so keep a bootstrap-peer list configured as a safety net).
+When snapshot peers are accepted, configured bootstrap peers remain dormant
+for the bootstrap recovery cooldown. If snapshot connections cannot sustain
+the minimum hot-peer set afterward, normal bootstrap recovery re-enables them
+when automatic recovery is enabled and no usable warm gossip or ledger peers
+are available to promote.
+
+Local-root groups accept `hotValency` or the legacy `valency` spelling;
+`valency` takes precedence. An omitted `warmValency` uses the hot target.
+An explicit warm target must be at least the hot target and cannot exceed
+the access-point count for a nonempty group. Unknown shared topology fields
+remain accepted.
 
 Dingo accepts cardano-node's version 23 snapshot format. Its network magic must
 match the configured node, its block point must carry a 32-byte hexadecimal
@@ -173,10 +185,11 @@ fast source, and per-peer density/corroboration for metrics or debugging.
 
 ## Tuning `corroborationPeers`
 
-- **0** — corroboration off. The densest source wins on density alone (prior
-  behavior). Use only when every configured peer is already trusted.
-- **1** — a single independent peer must confirm the fast source. Minimal
-  protection; a lone honest snapshot peer is enough to keep going.
+- **0** — corroboration off. The densest source wins on density alone. Set this
+  explicitly only when every configured peer is already trusted for fork
+  choice.
+- **1 (default)** — a single independent peer must confirm the fast source.
+  Minimal protection; a lone honest snapshot peer is enough to keep going.
 - **2+** — require a quorum of distinct-host peers. More robust against a small
   set of colluding/divergent sources, but the node stalls until that many
   reachable peers agree, so size it to how many independent snapshot peers you
