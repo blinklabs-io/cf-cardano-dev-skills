@@ -242,6 +242,9 @@ Instructions...
 - [ ] Required safety behavior is stated in the body, not only in
       host-specific frontmatter
 - [ ] Deep content in `references/`, one level only — no nested subdirectories
+- [ ] States durable reasons rather than dates, counts, versions or popularity
+      figures, unless the figure is fixed by nature and changes what the reader
+      does (a version floor, a deliberate pin, a dated hard fork)
 - [ ] No mention of specific deployed dApps; teach categories generically
 - [ ] No mention of grants, treasuries, or governance proposals — the skill must read as a neutral community contribution
 

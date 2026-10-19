@@ -47,6 +47,9 @@ the canonical source for skills consumed by both Claude Code and Codex.
   example, say "search the local corpus," not "use Grep" or "run rg."
 - Avoid host-only invocation syntax in normative instructions. A usage note
   may show both forms when that helps users.
+- State the durable reason, not a date, count, version or popularity figure,
+  unless the figure is fixed by nature and changes what the reader does (a
+  version floor, a deliberate pin, a dated hard fork).
 - Keep paths relative and portable. Do not use `${CLAUDE_SKILL_DIR}`,
   `${CLAUDE_PLUGIN_ROOT}`, a home-directory path, or an assumed checkout path
   in shared skill bodies.
