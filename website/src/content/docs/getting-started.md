@@ -1,6 +1,6 @@
 ---
 title: Getting started
-description: Install the shared Cardano Dev Skills for Claude Code, Claude Cowork, Codex, or as a standalone Markdown reference.
+description: Install the shared Cardano Dev Skills for Claude Code, the Claude app, Codex, or as a standalone Markdown reference.
 ---
 
 Cardano Dev Skills works in four modes. Pick the one that matches your agent.
@@ -33,9 +33,14 @@ run `/plugin`, open **Marketplaces**, select **cardano-dev-skills**, and choose
 `claude plugin update cardano-dev-skills@cardano-dev-skills` from your shell
 and restart.
 
-## Claude Cowork (desktop, web, mobile)
+## Claude app, formerly Claude Cowork (web, desktop, mobile)
 
-Cowork uses the same plugin format, so this marketplace works there unchanged.
+The Claude app's Chat side uses the same plugin format as Claude Code, so this
+marketplace works there unchanged. Installing here also syncs the plugin to
+Claude Code sessions signed in with the same account.
+
+Hooks don't run in chat, so the SessionStart hook's notices (docs age, context
+status) appear only in Cowork, where your app still has it, and in Claude Code.
 
 1. Open **Customize** and go to the **Plugins** tab.
 2. Under **Personal plugins**, click **+**, then **Add marketplace**.
@@ -43,9 +48,9 @@ Cowork uses the same plugin format, so this marketplace works there unchanged.
    `https://github.com/cardano-foundation/cardano-dev-skills`
 4. Install **cardano-dev-skills** from the marketplace once it syncs.
 
-You get the same skills as the Claude Code plugin. Cowork syncs the whole
-repository, and `docs/sources/` is roughly 30 MB of bundled documentation, so
-the first sync is not instant.
+You get the same skills as the Claude Code plugin. The Claude app syncs the
+whole repository, and `docs/sources/` is roughly 30 MB of bundled documentation,
+so the first sync is not instant.
 
 ## Codex
 
