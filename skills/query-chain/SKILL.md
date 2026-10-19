@@ -169,7 +169,7 @@ process replaces the usual node-plus-Ogmios-plus-Kupo stack:
 - Modular JVM indexer: each store you enable (UTxO, transactions, assets, staking, governance, ...) lands in your own database (PostgreSQL, MySQL or H2), behind Yaci Store's own REST API
 - The analytics store, the MCP server and an opt-in Blockfrost-compatible API (the `blockfrost` profile, under `/api/v1/blockfrost`) ship only in the 3.x line, which is still in beta: say so when recommending them, and check the release notes before building on them
 - The analytics store exports the index from PostgreSQL to Parquet and serves read-only DuckDB SQL through an MCP server (the `mcp` profile) and a REST query API. Both are off by default and unauthenticated; put an authenticating proxy in front before they leave localhost
-- For analytics, the developer supplies the URL of a Yaci Store they run, or a Parquet export to read with DuckDB. The Cardano Foundation also hosts a public playground with the MCP enabled at `https://yaci-playground.cf-app.org/mcp`: fine for trying the tools, but its URL, network and data freshness are not guaranteed, so check what `analytics-list-tables` reports before quoting a figure from it
+- For analytics, the developer supplies the URL of a Yaci Store they run, or a Parquet export to read with DuckDB.
 - Docs: `../../docs/sources/yaci-store-mcp/` (`docs/app/docs/v3/analytics/`, `aggregates/`)
 
 When answering from a Yaci Store analytics store:
