@@ -73,12 +73,15 @@ refresh_hint() {
     if [ "${IS_LOCAL_CLONE}" -eq 1 ]; then
         echo "  cd ${PLUGIN_ROOT} && git pull && ./scripts/fetch-docs.sh"
     else
-        # `marketplace update` takes the marketplace NAME (from
-        # .claude-plugin/marketplace.json), not the owner/repo path that
-        # `marketplace add` takes. Naming the owner here produced
-        # "Marketplace not found" for every marketplace-installed user — which
-        # is most of them, since the local-clone branch above covers the rest.
-        echo "  Refresh via: /plugin marketplace update cardano-dev-skills"
+        # A marketplace install is a cached copy of the commit that was current
+        # at install time. `marketplace update` refreshes only the listing and
+        # leaves that copy in place; `plugin update` refreshes the listing and
+        # installs the newer commit. In a session that is /plugin → Installed →
+        # Update now; from a shell, `plugin update` takes name@marketplace, not the owner/repo
+        # path that `marketplace add` takes. Third-party marketplaces start
+        # with auto-update off, which is how installs fall this far behind.
+        echo "  Update from a shell: claude plugin update cardano-dev-skills@cardano-dev-skills"
+        echo "  Stay current: run /plugin, open Marketplaces, select cardano-dev-skills, choose Enable auto-update"
     fi
 }
 
@@ -147,8 +150,23 @@ CWD_REAL=$( { cd . && pwd -P; } 2>/dev/null || echo "" )
 PLUGIN_REAL=$( { cd "${PLUGIN_ROOT}" && pwd -P; } 2>/dev/null || echo "__plugin_unreachable__" )
 
 if [ -n "${CWD_REAL}" ] && [ "${CWD_REAL}" != "${PLUGIN_REAL}" ]; then
+    # The current block version is whatever the cardano-context skill writes, so
+    # the hook never needs a bump of its own. Versions compare as numbers: a block
+    # newer than this plugin's must not be "updated", because re-running the skill
+    # would downgrade it. If either version can't be read, any block counts as
+    # current.
+    CURRENT_V=$(grep -o '<!-- BEGIN cardano-dev-skills v[0-9]* -->' \
+        "${PLUGIN_ROOT}/skills/cardano-context/SKILL.md" 2>/dev/null | head -1 | tr -cd '0-9')
     if [ -f "./CLAUDE.md" ] && grep -q '<!-- BEGIN cardano-dev-skills' "./CLAUDE.md" 2>/dev/null; then
-        echo "[Cardano Dev Skills] Cardano context active in this project."
+        PROJECT_V=$(grep -o '<!-- BEGIN cardano-dev-skills v[0-9]* -->' "./CLAUDE.md" 2>/dev/null \
+            | head -1 | tr -cd '0-9')
+        if [ -n "${CURRENT_V}" ] && [ -n "${PROJECT_V}" ] && [ "${PROJECT_V}" -lt "${CURRENT_V}" ]; then
+            echo "[Cardano Dev Skills] The Cardano context block in CLAUDE.md is an older version (v${PROJECT_V}, current v${CURRENT_V}); run /cardano-dev-skills:cardano-context to update it."
+        elif [ -n "${CURRENT_V}" ] && [ -n "${PROJECT_V}" ] && [ "${PROJECT_V}" -gt "${CURRENT_V}" ]; then
+            echo "[Cardano Dev Skills] Cardano context active in this project (block v${PROJECT_V} is newer than this plugin's v${CURRENT_V}; update the plugin rather than re-running cardano-context)."
+        else
+            echo "[Cardano Dev Skills] Cardano context active in this project."
+        fi
     elif [ -d "./.git" ] || [ -f "./CLAUDE.md" ] || [ -d "./.claude" ]; then
         echo "[Cardano Dev Skills] Tip: run /cardano-dev-skills:cardano-context to enable auto-consultation in this project."
     fi

@@ -260,7 +260,6 @@
     - "*.go"
     - "ledger/*.go"
     - "ledger/common/**/*.go"
-    - "examples/**/*.go"
   description: Go building blocks for Ouroboros/Cardano protocols - mini-protocol implementations, ledger types, CBOR codecs
   website: https://pkg.go.dev/github.com/blinklabs-io/gouroboros
 
@@ -509,17 +508,6 @@
     - "packages/**/README.md"
     - "packages/**/*.md"
   description: Smart contract framework by Harmonic Labs (TypeScript)
-
-- name: Smart Contract Vulnerabilities
-  repo: https://github.com/easy1staking-com/cardano-smart-contract-vulnerabilities.git
-  docs_path: "."
-  format: markdown
-  category: smart-contracts
-  priority: high
-  glob_patterns:
-    - CARDANO-SMART-CONTRACT-VULNERABILITIES.md
-    - README.md
-  description: 26 documented eUTxO vulnerability patterns with mitigations
 
 - name: Plutarch
   repo: https://github.com/Plutonomicon/plutarch-plutus.git

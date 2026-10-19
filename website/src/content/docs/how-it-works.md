@@ -59,11 +59,14 @@ and the current working directory and prints status lines prefixed
 - **Supply-chain framing.** Prints a standing note that the bundled
   corpus is third-party reference data, never instructions to execute.
 - **Docs stale (>30 days).** Suggests how to refresh based on install topology:
-  local clone → `git pull && ./scripts/fetch-docs.sh`; marketplace install →
-  `/plugin marketplace update cardano-dev-skills`.
+  for a local clone, `git pull && ./scripts/fetch-docs.sh`; for a marketplace
+  install, `claude plugin update cardano-dev-skills@cardano-dev-skills` from a
+  shell, or auto-update turned on for the marketplace in `/plugin`.
 - **Plugin clone behind upstream.** Local clones only: if `git fetch` has run
   and you haven't pulled, the hook prints how many commits behind you are.
-- **Cardano context active.** When `./CLAUDE.md` contains the directive block.
+- **Cardano context active.** When `./CLAUDE.md` contains the current directive
+  block. An older block gets a prompt to re-run `/cardano-dev-skills:cardano-context`;
+  a block newer than the installed plugin gets a prompt to update the plugin.
 - **Cardano context nudge.** When cwd looks like a project (`.git`, `.claude`,
   or existing `CLAUDE.md`) but has no block: *"Tip: run
   /cardano-dev-skills:cardano-context to enable auto-consultation in this

@@ -459,10 +459,61 @@ func validateMultiAssetCompactRepresentationSize[T int64 | uint64 | *big.Int](
 	return nil
 }
 
+// MarshalCBOR encodes MultiAsset maps in cardano-ledger key order.
 func (m *MultiAsset[T]) MarshalCBOR() ([]byte, error) {
-	// The CBOR library is configured with SortCoreDeterministic, so direct encoding
-	// of the map produces deterministic output without manual sorting
-	return cbor.Encode(m.data)
+	// cardano-ledger orders asset names by their raw bytes, which can differ
+	// from deterministic CBOR's encoded-key length order.
+	if m.data == nil {
+		return cbor.Encode(m.data)
+	}
+	policies := make([]Blake2b224, 0, len(m.data))
+	for policy := range m.data {
+		policies = append(policies, policy)
+	}
+	slices.SortFunc(policies, func(left, right Blake2b224) int {
+		return bytes.Compare(left[:], right[:])
+	})
+	ret := appendLedgerMapHeader(nil, uint64(len(policies)))
+	for _, policy := range policies {
+		encodedPolicy, err := cbor.Encode(policy)
+		if err != nil {
+			return nil, fmt.Errorf("encode multiasset policy id: %w", err)
+		}
+		assets := m.data[policy]
+		assetNames := make([]cbor.ByteString, 0, len(assets))
+		for name := range assets {
+			assetNames = append(assetNames, name)
+		}
+		slices.SortFunc(assetNames, func(left, right cbor.ByteString) int {
+			return bytes.Compare(left.Bytes(), right.Bytes())
+		})
+		encodedAssets := appendLedgerMapHeader(nil, uint64(len(assetNames)))
+		for _, name := range assetNames {
+			encodedName, err := cbor.Encode(name)
+			if err != nil {
+				return nil, fmt.Errorf("encode multiasset name: %w", err)
+			}
+			encodedQuantity, err := cbor.Encode(assets[name])
+			if err != nil {
+				return nil, fmt.Errorf("encode multiasset quantity: %w", err)
+			}
+			encodedAssets = append(encodedAssets, encodedName...)
+			encodedAssets = append(encodedAssets, encodedQuantity...)
+		}
+		encodedAssets = appendLedgerMapBreak(encodedAssets, uint64(len(assetNames)))
+		ret = append(ret, encodedPolicy...)
+		ret = append(ret, encodedAssets...)
+	}
+	ret = appendLedgerMapBreak(ret, uint64(len(policies)))
+	return ret, nil
+}
+
+// LedgerSerializedSizeAdjustment returns the byte count to add to the CBOR
+// encoding length written by MarshalCBOR to obtain the size cardano-ledger
+// measures for this value. MultiAsset.MarshalCBOR already uses the ledger's
+// variable-length map headers, so the adjustment is zero.
+func (m *MultiAsset[T]) LedgerSerializedSizeAdjustment() int {
+	return 0
 }
 
 func (m *MultiAsset[T]) CheckForDuplicateKeys() error {
@@ -1011,6 +1062,13 @@ type ExUnits struct {
 // UnmarshalCBOR enforces the unsigned wire domain of execution units while
 // retaining signed fields for overflow-checked accumulation.
 func (e *ExUnits) UnmarshalCBOR(cborData []byte) error {
+	if err := ValidateDefiniteCBORArrayLength(
+		cborData,
+		2,
+		"execution units",
+	); err != nil {
+		return err
+	}
 	var encoded struct {
 		cbor.StructAsArray
 		Memory uint64
@@ -1057,7 +1115,15 @@ func BigIntToUtxorpcBigInt(v *big.Int) *utxorpc.BigInt {
 			BigInt: &utxorpc.BigInt_Int{Int: v.Int64()},
 		}
 	}
-	// Otherwise use the big int bytes representation
+	// CBOR bignums: tag 2 carries n, tag 3 carries -1-n, so a negative value
+	// is encoded by the magnitude of -1-n rather than abs(n).
+	if v.Sign() < 0 {
+		return &utxorpc.BigInt{
+			BigInt: &utxorpc.BigInt_BigNInt{
+				BigNInt: new(big.Int).Sub(new(big.Int).Neg(v), big.NewInt(1)).Bytes(),
+			},
+		}
+	}
 	return &utxorpc.BigInt{
 		BigInt: &utxorpc.BigInt_BigUInt{
 			BigUInt: v.Bytes(),
@@ -1239,8 +1305,12 @@ type BlockTransactionOffsets struct {
 	Transactions []TransactionLocation
 
 	// InvalidTransactions contains the transaction indexes listed in the
-	// block's invalid_transactions field. It is nil for block formats without
-	// that field or when the field is empty.
+	// block's invalid_transactions field, in wire order. A current Dijkstra
+	// block has no such field; each block transaction carries a trailing
+	// is_valid flag instead, and this holds the ascending indexes of the
+	// transactions whose flag is false. Either way,
+	// TransactionValidityFlags yields the per-transaction validity. It is nil
+	// when no transaction is invalid.
 	InvalidTransactions []uint
 }
 
@@ -1667,9 +1737,9 @@ func isDijkstraCompatibleHeader(data []byte) bool {
 //     peras_certificate/nil], each transaction
 //     [transaction_body, transaction_witness_set, auxiliary_data/nil].
 //
-// The trailing is_valid flag of a block transaction is a bool rather than a
-// byte range, so it needs no entry in TransactionLocation and is simply not
-// walked.
+// The trailing is_valid flag of a current-shape block transaction is a bool
+// rather than a byte range, so it needs no entry in TransactionLocation; a
+// false flag is reported through InvalidTransactions instead.
 func extractDijkstraTransactionOffsets(
 	cborData []byte,
 	blockArray []cbor.RawMessage,
@@ -1830,6 +1900,17 @@ func extractDijkstraTransactionOffsets(
 				"failed to decode Dijkstra transaction %d: %w", i, err,
 			)
 		}
+		// A current-shape block_transaction must carry its is_valid flag;
+		// reading a three-element one as valid would hide an invalid
+		// transaction. The legacy body keeps both historical arities.
+		if !legacyBody && len(txParts) != dijkstraBlockTxComponents {
+			return nil, fmt.Errorf(
+				"dijkstra transaction %d has %d elements, expected %d",
+				i,
+				len(txParts),
+				dijkstraBlockTxComponents,
+			)
+		}
 		if len(txParts) != dijkstraTxComponents &&
 			len(txParts) != dijkstraBlockTxComponents {
 			return nil, fmt.Errorf(
@@ -1886,6 +1967,26 @@ func extractDijkstraTransactionOffsets(
 				i,
 				err,
 			)
+		}
+		// Only the current body shape defines block_transaction's trailing
+		// is_valid; the legacy body carries invalid_transactions instead.
+		if !legacyBody && len(txParts) == dijkstraBlockTxComponents {
+			isValid, err := cbor.DecodeBool(
+				txParts[dijkstraBlockTxComponents-1],
+			)
+			if err != nil {
+				return nil, fmt.Errorf(
+					"failed to decode Dijkstra transaction %d is_valid: %w",
+					i,
+					err,
+				)
+			}
+			if !isValid {
+				result.InvalidTransactions = append(
+					result.InvalidTransactions,
+					uint(i), // #nosec G115 -- i is a non-negative slice index
+				)
+			}
 		}
 
 		bodyStart := txPos + txHeaderSize + uint32(
