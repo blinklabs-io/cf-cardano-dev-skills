@@ -1,7 +1,9 @@
 # On-Chain Verification Steps
 
 This skill makes no network calls. It hands the user the commands, they run them, and the
-assessment reasons over what comes back. Present a command only when its answer will actually
+assessment reasons over what comes back. For a transaction that has not been submitted yet, the
+fields read from `proposal_list` below come from the decoded transaction instead; see
+`transaction-input.md`. Present a command only when its answer will actually
 change a finding, and say which provision it settles.
 
 Endpoint shapes below are taken from the bundled Koios spec at
@@ -11,6 +13,9 @@ GET endpoints. Any provider works; Koios is used here because its docs are bundl
 
 Until a command's output has been supplied, every provision that depends on it is
 **Not-yet-verifiable**. Never assume the expected answer.
+
+The commands need `curl`, `jq` and `python3`. Chain data is a point-in-time fact: record the
+epoch it was read at, because delegation and balances can change before enactment.
 
 ---
 
@@ -24,9 +29,10 @@ Settles: what is actually being proposed, and Article II.6.1 format and immutabi
 curl -s "https://api.koios.rest/api/v1/proposal_list?proposal_id=eq.<gov_action_id>" | jq '.[0]'
 ```
 
-Ask for: `proposal_type`, `meta_url`, `meta_hash`, `meta_json`, `proposed_epoch`,
-`expiration`, `return_address`, and for treasury actions the withdrawal amount and
-destination.
+Ask for: `proposal_type`, `proposal_tx_hash`, `meta_url`, `meta_hash`, `meta_json`,
+`proposed_epoch`, `expiration`, `return_address`, and for treasury actions `withdrawal`
+(each entry's `stake_address` and `amount` in lovelace; the same map is in
+`proposal_description.contents[0]`).
 
 Then retrieve the anchor document itself, so the assessment reads what was actually
 anchored rather than a copy:
@@ -38,6 +44,15 @@ curl -s "https://ipfs.io/ipfs/<cid>"
 # HTTPS anchor
 curl -s "<meta_url>"
 ```
+
+Hash what was retrieved. `b2sum` is not on stock macOS; Python is:
+
+```sh
+python3 -c "import hashlib,sys;print(hashlib.blake2b(open(sys.argv[1],'rb').read(),digest_size=32).hexdigest())" anchor.jsonld
+```
+
+`cardano-cli hash anchor-data --url <url> --expected-hash <meta_hash>` does the fetch and the
+comparison in one step, for HTTPS and `ipfs://` URLs.
 
 Two things to check on the anchor, both bearing on II.6.1:
 
@@ -110,6 +125,21 @@ Read three fields, and report each separately rather than as one pass or fail:
 On the second prong: any other DRep fails, including one that abstains as a matter of
 practice. The Constitution names the predefined option.
 
+For the separate-account prong, the account's history shows whether it is fresh or reused:
+
+```sh
+curl -s "https://api.koios.rest/api/v1/account_txs?_stake_address=<destination_stake_address>" | jq 'length, .[0:5]'
+```
+
+If the destination is a script credential, `script_info` returns the script, for example an
+m-of-n native script and its key hashes, which is the best evidence of who controls the funds:
+
+```sh
+curl -s -X POST "https://api.koios.rest/api/v1/script_info" \
+  -H "Content-Type: application/json" \
+  -d '{"_script_hashes":["<script_hash>"]}' | jq '.[0]'
+```
+
 Address type is readable from the bech32 prefix without any query, per CIP-19: `stake17…`
 (header `0xf1`) is script-locked, `stake1u…` (header `0xe1`) is key-hash. Report which it is.
 On the reading in `interpretive-positions.md`, key-hash custody does not by itself fail
@@ -117,12 +147,17 @@ II.7.6.
 
 ---
 
-## 3. Administrator confirmation
+## 3. Administrator evidence
 
-Settles: Article II.7.5, whether the named administrator publicly agreed to serve.
+Settles: Article II.7.5 designation and, on the reading in `interpretive-positions.md`, that the
+administrator exists at withdrawal. Evidence that the administrator agreed to serve is reported
+as an open question; the text requires designation, not agreement.
 
-There are two recognized channels, and either one suffices. Check both before concluding no
-agreement exists.
+Existence: when the destination is a script, `script_info` (section 2) shows its keys, and a
+transaction signed by them, such as the one that registered and delegated the account, shows
+the keyholders acted.
+
+Agreement, two kinds of evidence; check both before reporting that none was found.
 
 **Channel A, a signature on the submission transaction.** Fetch the raw transaction and
 compare its vkey witness key hashes (blake2b-224) against keys the administrator is known to
@@ -134,8 +169,9 @@ curl -s -X POST "https://api.koios.rest/api/v1/tx_cbor" \
   -d '{"_tx_hashes":["<tx_hash>"]}' | jq -r '.[0].cbor'
 ```
 
-This returns CBOR, so extracting the witness set requires decoding it; it is not a one-line
-jq filter. Say so plainly rather than presenting a command that will not work.
+This returns CBOR. Decode it as in `transaction-input.md` section 1 and read the vkey
+witnesses. Compare their key hashes with the administrator's keys, for example the keys of the
+destination's native script from `script_info`.
 
 **Channel B, a CIP-100 author signature on the anchor.** An `authors[].witness` entry naming
 the administrator. A public key in the document proves nothing on its own, since anyone can
@@ -145,8 +181,9 @@ paste one. The ed25519 signature itself must verify: URDNA2015 canonicalization 
 An author signature over the very document that designates the administrator is sufficient
 even with no transaction witness.
 
-If neither channel can be checked with the material available, II.7.5 is Not-yet-verifiable.
-Do not report it as satisfied because the anchor names a well-known organization.
+If both kinds of evidence were checked and neither was found, say so in open questions with
+what would settle it. If they could not be checked, say that instead. Neither changes the
+II.7.5 row, which turns on designation.
 
 ---
 
@@ -154,14 +191,33 @@ Do not report it as satisfied because the anchor names a well-known organization
 
 Settles: whether the withdrawal fits the treasury limit currently in force.
 
-Never hardcode a figure. The limit is set by an Info action and changes. Locate the currently
-active one and its epoch window, sum the withdrawals enacted inside that window, and confirm
-the arithmetic with the user before relying on it.
+Never hardcode a figure. TREASURY-01a sets the limit through an on-chain action agreed by
+DReps with more than 50% of the active voting stake. In practice that is an Info action. Info
+actions are never ratified or enacted, so `ratified_epoch` and `enacted_epoch` stay `null` on
+them; agreement shows only in the vote tally.
+
+Find the candidate Info actions, then check which reached the threshold:
 
 ```sh
-curl -s "https://api.koios.rest/api/v1/proposal_list?proposal_type=eq.InfoAction" \
-  | jq '[.[] | select(.enacted_epoch != null)] | sort_by(.enacted_epoch) | reverse | .[0:5]'
+curl -s "https://api.koios.rest/api/v1/proposal_list?proposal_type=eq.InfoAction&select=proposal_id,proposed_epoch,expiration,title:meta_json->body->>title&order=proposed_epoch.desc" \
+  | jq '[.[] | select((.title // "") | test("net change"; "i"))]'
+
+curl -s "https://api.koios.rest/api/v1/proposal_voting_summary?_proposal_id=<gov_action_id>" \
+  | jq '.[0] | {epoch_no, drep_yes_pct}'
 ```
+
+The title filter is a convenience, not a definition: read the anchor of the action that passed
+to get the limit and its epoch window from the document itself. Then sum the
+TreasuryWithdrawals enacted inside that window, add this one, and confirm the arithmetic with
+the user before relying on it:
+
+```sh
+curl -s "https://api.koios.rest/api/v1/proposal_list?proposal_type=eq.TreasuryWithdrawals&enacted_epoch=gte.<A>&enacted_epoch=lte.<B>&select=proposal_id,enacted_epoch,withdrawal" \
+  | jq '[.[].withdrawal[].amount | tonumber] | add / 1000000'
+```
+
+If more than one approved limit covers the window, follow the Net Change Limit position in
+`interpretive-positions.md`.
 
 Compliance here is an affirmation in one sentence, not a section. Report it as a finding only
 if the withdrawal actually exceeds the limit.

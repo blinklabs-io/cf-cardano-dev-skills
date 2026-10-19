@@ -11,11 +11,15 @@ exactly which text the reasoning rests on.
 | Version directory | `cardano-constitution-2/` |
 | Anchor URI | `ipfs://bafkreieyuknozbtewyurfqoagvplvykadn6a4u6wglupavdz46bbsnnl6e` |
 | Anchor hash | `b368bdad83c727bbfe86425575233fb914eb76d05d89497f7790cf007fd95f52` |
+| Guardrails script hash | `fa24fb305126805cf2164c161d852a0e7330cf988f1fe558cf7d4a64` |
+| Governance action | `gov_action1jxne7hynfd7frcczwumd2eggps4kvy0msjztz9t0mutpy870ksgqqp6vp3p` |
 | Ratified epoch | 608 |
 | Enacted epoch | 609 |
 
-The anchor hash above is the BLAKE2b-256 of the on-chain document, as stated in the version
-directory's upstream `README.md`. Version directories are immutable once enacted; an
+The anchor, hash, guardrails script and epochs are read from that action's on-chain record
+(`proposal_list` by `proposal_id`; the anchor is in `proposal_description`). The upstream
+`README.md` in the version directory leaves the epochs as "XXX", and the transaction it names
+(`8c653ee5…`) is the previous Constitution's action, which this one cites as its predecessor. Version directories are immutable once enacted; an
 amendment arrives as a new sibling directory, which the weekly source refresh picks up
 automatically.
 
@@ -32,11 +36,15 @@ This skill does not make network calls. Ask the user to run the check and paste 
 back, or point them at it so they can confirm independently:
 
 ```sh
-curl -s "https://api.koios.rest/api/v1/proposal_list?select=proposal_type,ratified_epoch,enacted_epoch,proposal_description" \
-  | jq '[.[] | select(.proposal_type == "NewConstitution" and .enacted_epoch != null)]
-        | max_by(.enacted_epoch)
-        | {enacted_epoch, proposal_description}'
+curl -s "https://api.koios.rest/api/v1/proposal_list?proposal_type=eq.NewConstitution&select=proposal_id,ratified_epoch,enacted_epoch,expiration,proposal_description" \
+  | jq '[.[] | {proposal_id, ratified_epoch, enacted_epoch, expiration,
+               hash: .proposal_description.contents[1].anchor.dataHash}]
+        | sort_by(.enacted_epoch // 0) | reverse'
 ```
+
+Compare the anchor hash of the latest enacted entry with the table above; a matching hash is
+stronger than a matching epoch. Also look for an entry with a `ratified_epoch` but no
+`enacted_epoch` yet: a ratified Constitution is enacted at the next epoch boundary.
 
 Interpreting the result:
 

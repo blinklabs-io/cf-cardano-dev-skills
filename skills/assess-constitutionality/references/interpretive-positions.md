@@ -18,18 +18,25 @@ Rules for using this file:
 
 ## Article II.6.1 — format and immutability
 
-**Reading.** The requirement is a standardized legible format behind an immutable anchor.
-Mutability is a question of fact about the specific link, not a category judgment about the
-hosting service.
+**Reading.** The requirement is a standardized legible format behind an immutable anchor:
+"the document hosted by such a URL shall be immutable and incapable of being altered after
+submission". It covers the anchored document, the one whose hash is on chain, and nothing it
+links to. Mutability is a question of fact about the specific URL.
 
-**Reasoning.** A GitHub main-branch URL is unconditionally mutable: the content behind it can
-change without the anchor changing, defeating the point of anchoring. An IPFS CID is
-content-addressed and cannot. An IPNS name sits between the two and has to be resolved
-before judging it, because it may point at a fixed CID.
+**Reasoning.** An IPFS CID is content-addressed and cannot change. A URL that names a moving
+reference can: a GitHub branch path (`refs/heads/…`), a page on an ordinary web server, or an
+IPNS name until it is resolved to a fixed CID. A Git tag or release asset sits in between; tags
+can be moved and assets replaced, so treat it as changeable unless it is a commit hash.
 
-**Consequence.** Never assert an II.6.1 violation without establishing that the specific link
-can actually change. If it cannot be established from available material, the finding is
-Not-yet-verifiable, not Violated.
+**Consequence.** Establish what kind of URL the anchor is before writing the row. A
+branch-path or plain-server anchor is Violated on this reading, with the remedy (resubmit
+behind a content-addressed anchor). If the kind cannot be established, the row is
+Not-yet-verifiable.
+
+**Competing reading.** The on-chain hash makes any change detectable, so the anchored content
+is effectively fixed as long as the hash still matches. On that reading a mutable URL whose
+content still hashes correctly satisfies II.6.1. Where this decides the outcome, the report
+says so.
 
 ---
 
@@ -79,7 +86,8 @@ provided for.
 
 **Consequence.** Read the full exploded budget before concluding an allocation is missing.
 Check both prongs separately; oversight metrics are frequently overlooked when a financial
-audit is present.
+audit is present. An allocation with a defined scope, cadence and amount satisfies prong (a)
+even before an auditor is named: the text requires the allocation, not the counterparty.
 
 ---
 
@@ -97,12 +105,47 @@ that overstates it. Self-administration, where the recipient is its own administ
 unconstitutional per se. It becomes serious when combined with a structural failure such as
 an oversight architecture that does not yet exist.
 
-Whether an administrator has publicly agreed to serve is a question of evidence with two
-recognized channels: a signature on the submission transaction, or a CIP-100 author signature
-on the anchor. Key presence alone proves nothing, since a public key can be copied. Naming a
-"proposed administrator, subject to confirmation" leaves the requirement unmet. Directing
-funds to an organization's contract does not by itself make that organization the
+The text requires designation and nothing more: "shall designate one or more administrators
+responsible for monitoring how the funds are used, and ensuring the deliverables are achieved".
+A designation conditioned on a future event ("proposed administrator, subject to
+confirmation") is not yet a designation. A heading such as "Proposed administrators" over a
+body that states they serve is a designation; judge the operative terms, not the label.
+Directing funds to an organization's contract does not by itself make that organization the
 administrator.
+
+Whether the designated administrators agreed to serve is not a textual requirement. It is
+still worth reporting as an open question, because a voter may weigh it. The evidence comes
+in two kinds: a signature on the submission transaction by a key the administrator controls,
+or a verified CIP-100 author signature on the anchor. Key presence alone proves nothing, since
+a public key can be copied.
+
+---
+
+## Article II.6.2 — supporting materials outside the anchor
+
+**Reading.** II.6.2 asks for "relevant supporting materials" and sets no condition on where they
+live. Material the anchor references, such as a full proposal with the budget, refund terms or
+the administrators' names, counts toward II.6.2 and the Article II.7 provisions it carries.
+
+**Reasoning.** II.6.1 imposes immutability on the anchored document only. Requiring referenced
+material to be immutable too would add an obligation the text does not state.
+
+**Consequence.** Assess the referenced material as part of the action. When it sits behind a
+URL that can change, say so in open questions, with what was read and its hash, so a reader
+can tell whether it later changed. That is a voter's concern, not a constitutional defect.
+
+---
+
+## Net Change Limit — which limit is in force
+
+**Reading.** The limit in force is the latest one DReps approved under TREASURY-01a whose period
+covers the withdrawal. The Constitution does not say how a later limit relates to an earlier
+one for the same period, so the finding always states which limit it relied on.
+
+**Consequence.** Write "Based on the understanding that the Net Change Limit in force is …"
+and name the action. If another approved limit covers the same window, give the outcome under
+it in one sentence. If no approved limit can be established, ask the user rather than assume
+one.
 
 ---
 
@@ -204,6 +247,9 @@ matter.
 when a network parameter is changed with no benchmarking and no monitoring commitment, because
 there the risk is real and unexamined. Where the proposal has addressed the risk, report the
 omission as an open question and say what would settle it.
+
+**Competing reading.** "Must include" read strictly makes both elements required, so a missing
+recovery element is Violated whatever the risk. Where a row turns on this, the report says so.
 
 Partial reversibility is never a defect on its own. Appendix I.2.6 states that not all changes
 can be reverted, so a proposal disclosing where its own revert path stops short is complying with

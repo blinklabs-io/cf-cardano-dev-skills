@@ -17,9 +17,9 @@ omitted and never abbreviated, because a missing row is indistinguishable from a
 | | |
 |---|---|
 | Action type | <TreasuryWithdrawals / ParameterChange / …> |
-| Stage | Live action / Draft |
-| Identifier | <gov_action1… or "not yet submitted"> |
-| Source | <file path, URL as supplied by the user, or "pasted into conversation"> |
+| Stage | Live action / Pre-submission / Draft |
+| Identifier | <gov_action1…, or the transaction ID for a pre-submission transaction, or "not yet submitted"> |
+| Source | <on-chain record; transaction decoded with <tool>; file path; URL as supplied by the user; or "pasted into conversation"> |
 | Assessed | <date> |
 
 ## Basis
@@ -28,10 +28,21 @@ omitted and never abbreviated, because a missing row is indistinguishable from a
 |---|---|
 | Constitution | enacted epoch 609, anchor hash `b368bd…` |
 | Currency | Confirmed current / Unverified |
-| On-chain record | Supplied and assessed / Not supplied / Not applicable (draft) |
+| On-chain record | Supplied and assessed / Decoded from the transaction / Not supplied / Not applicable (draft) |
+| Data read at | <epoch, and date> |
 
 <If currency is unverified, one sentence: the assessment rests on the snapshot above and a
 newer Constitution may have been enacted since.>
+
+## Pre-submission checks
+
+<Pre-submission transactions only. Both tables from transaction-input.md, mechanical and
+constitutional, each row Pass / Fail / Not checked with the reason.>
+
+| Check | Result | Basis |
+|---|---|---|
+| Deposit equals `govActionDeposit` | Pass | <value read, value expected> |
+| Anchor content hashes to the anchor data hash | Fail | <computed hash, anchored hash> |
 
 ## Findings
 
@@ -58,6 +69,9 @@ conditionality, value for money. Labelled clearly as not constitutional findings
 
 ## Disposition
 
+<Pre-submission only, first: **Readiness:** Ready to submit / Fix before submitting: <rows> /
+Not checked: <rows>.>
+
 <Assessment language. "No constitutional defects identified." / "Constitutional defects
 identified under Article II.7.5." / "Assessment incomplete: II.7.5 and II.7.6 could not be
 settled without the on-chain record.">
@@ -73,8 +87,7 @@ and how to establish it. See onchain-verification.md.>
 
 - [ ] Withdrawal destination is a separate account, not delegated to any stake pool, and
       delegated to the predefined `drep_always_abstain` option (II.7.6)
-- [ ] Administrator has publicly agreed, via transaction witness or verified CIP-100 author
-      signature (II.7.5)
+- [ ] Administrators are designated in the action's own terms, not conditionally (II.7.5)
 - [ ] Anchor is immutable and its content hashes to the on-chain `meta_hash` (II.6.1)
 - [ ] Withdrawal fits within the Net Change Limit currently in force
 ```
@@ -95,6 +108,8 @@ likely to be wrong. Constrain it:
 
 ## Rules for the findings table
 
+- A provision with several prongs (II.6.1 format, hash and immutability; II.7.1's four terms;
+  II.7.6's three) gets one row per prong, so a reader can see which part failed.
 - Every engaged provision gets a row. A provision examined and found satisfied is a row; a
   provision never examined is a row marked Not-yet-verifiable.
 - Three states only: Satisfied, Violated, Not yet verifiable. No "probably", no "likely
