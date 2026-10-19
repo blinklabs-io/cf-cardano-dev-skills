@@ -4,7 +4,7 @@ Comparison of Cardano Improvement Proposals for native token metadata.
 
 ## Quick Comparison
 
-| Feature | CIP-25 | CIP-68 | CIP-113 (accepted) |
+| Feature | CIP-25 | CIP-68 | CIP-113 (Proposed) |
 |---------|--------|--------|---------|
 | Metadata location | Transaction metadata (label 721) | Datum on reference UTxO | Orthogonal — standard native-asset naming; can pair with CIP-68 metadata |
 | Updatable | No | Yes | n/a (metadata is a separate concern) |
@@ -138,8 +138,10 @@ Both the reference token (100) and user token (222/333/444) share the same
 **Status:** Proposed, merged into the CIPs repository through
 [cardano-foundation/CIPs#444](https://github.com/cardano-foundation/CIPs/pull/444).
 The Cardano Foundation's core on-chain framework has been professionally
-audited. The modules and the off-chain platform have not, and have been tested
-only on the Preview testnet: audit any module you deploy. The "Audit and
+audited; each finding was resolved or acknowledged as a residual design
+limitation, and an audit does not by itself make a deployment safe. The modules
+and the off-chain platform have not been audited, and have been tested only on
+the Preview testnet: audit any module you deploy. The "Audit and
 Production Readiness" section of `../../docs/sources/cip-113-programmable-tokens/README.md`
 and the "Project Status" section of
 `../../docs/sources/cip-113-programmable-tokens-platform/README.md` give each
@@ -202,7 +204,7 @@ memory for this standard.
   registered in the on-chain registry (new policy ID = new token)
 - Existing CIP-68 metadata practices can be reused for the new token's metadata
 - If compliance rules are likely, design for CIP-113 from the start — and note
-  it is accepted but not yet merged (PR #444)
+  its status is still Proposed, not Active
 
 ## Choosing the Right Standard
 

@@ -68,7 +68,7 @@ The 5 curated use cases have hand-reviewed implementations across on-chain Aiken
 - **token-transfer** — native-token movement under a spend validator (not bare ADA)
 - **htlc** — Hashed Time-Locked Contract; redeem-with-preimage or refund-after-deadline
 
-The other 16 use cases (bet, auction, crowdfund, vault, storage, simple-wallet, pricebet, payment-splitter, lottery, constant-product-amm, upgradable-proxy, factory, decentralized-identity, editable-nft, anonymous-data, atomic-transaction) ship an Aiken validator and, for most, off-chain code in all four stacks upstream, which has not been hand-reviewed here. constant-product-amm and editable-nft ship only a Scalus full-stack version.
+The other 16 use cases (bet, auction, crowdfund, vault, storage, simple-wallet, pricebet, payment-splitter, lottery, constant-product-amm, upgradable-proxy, factory, decentralized-identity, editable-nft, anonymous-data, atomic-transaction) ship an Aiken validator and, for most, off-chain code in all four stacks upstream, which has not been hand-reviewed here; the Evolution code uses the older `@evolution-sdk/lucid` package and needs porting. constant-product-amm and editable-nft ship only a Scalus full-stack version.
 
 For full descriptions and source-code paths see `references/use-cases.md`. For an end-to-end flagship walkthrough of vesting (the recommended first project) see `references/vesting-walkthrough.md`.
 

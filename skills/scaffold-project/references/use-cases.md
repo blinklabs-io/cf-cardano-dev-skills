@@ -9,7 +9,7 @@ This file lists the reference use cases derived from `../../docs/sources/cardano
 Not every use case is equally polished. We split them into two tiers:
 
 - **Curated (5).** End-to-end implementations have been hand-reviewed across Aiken on-chain plus all four off-chain stacks (Mesh, Evolution, cardano-client-lib, PyCardano). The skill points you at the source files; the on-chain code, off-chain code, and (for vesting) a walkthrough are in the repo.
-- **Agent-generated (16).** Upstream ships the Aiken validator and, for most, off-chain code in all four stacks under `<name>/offchain/`, but none of it has been hand-reviewed here. The workflow is: read the Aiken validator as the spec, run `aiken build` to emit the CIP-57 `plutus.json`, then start from the upstream off-chain code for your stack and check it against the validator. Where a stack is missing, write it in-session from the bundled SDK docs at `../../docs/sources/<sdk-slug>/`.
+- **Agent-generated (16).** Upstream ships the Aiken validator and, for most, off-chain code in all four stacks under `<name>/offchain/`, but none of it has been hand-reviewed here. The upstream Evolution SDK code (`offchain/evolutionsdk/`) is written for the older `@evolution-sdk/lucid` package, not `@evolution-sdk/evolution`: read it for the transaction shape and port the calls using `references/layout-aiken-evolution.md` and the bundled Evolution docs, rather than copying its imports. The workflow is: read the Aiken validator as the spec, run `aiken build` to emit the CIP-57 `plutus.json`, then start from the upstream off-chain code for your stack and check it against the validator. Where a stack is missing, write it in-session from the bundled SDK docs at `../../docs/sources/<sdk-slug>/`.
 
 For curated use cases the deliverable is a working starting point. For agent-generated use cases the deliverable is the on-chain code plus the upstream off-chain code for the chosen stack, reviewed against the validator in-session.
 
@@ -59,7 +59,7 @@ When the agent and developer pick an agent-generated use case, the workflow is:
 1. Read the Aiken validator at `../../docs/sources/cardano-use-case-templates/<name>/onchain/aiken/validators/<name>.ak`. This is the spec.
 2. Run `aiken build` after copying the validator into the scaffolded project. The CIP-57 `plutus.json` produced is the contract between on-chain and off-chain code.
 3. Open bundled SDK docs at `../../docs/sources/<sdk-slug>/` to look up current API shapes. SDKs change quickly; the bundled docs are the source of truth.
-4. Read the use case's own upstream off-chain code for your stack at `../../docs/sources/cardano-use-case-templates/<name>/offchain/<stack>/`. Where it is missing, use the closest curated implementation as a structural model (vesting's off-chain code shows the load-blueprint, build-tx, submit pattern).
+4. Read the use case's own upstream off-chain code for your stack at `../../docs/sources/cardano-use-case-templates/<name>/offchain/<stack>/` (`meshjs`, `evolutionsdk`, `pycardano` or `ccl-java`; for Evolution, port it as described above). Where it is missing, use the closest curated implementation as a structural model (vesting's off-chain code shows the load-blueprint, build-tx, submit pattern).
 5. Write the off-chain code in the scaffolded project. Don't paste from the bundled docs verbatim — adapt to your stack and the validator's exact datum/redeemer shapes.
 
 ## Caveats

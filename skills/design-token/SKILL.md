@@ -104,8 +104,9 @@ Search `../../docs/sources/` for detailed CIP comparisons.
   credential, and validation logic runs on every transfer, mint, and burn
 - An on-chain registry links each token to its transfer/issuance logic;
   modules (freeze-and-seize, KYC) plug into the shared framework
-- Most complex. The core on-chain framework has been professionally audited;
-  the modules and the off-chain platform have not
+- Most complex. The core on-chain framework has been professionally
+  audited, with each finding resolved or acknowledged as a residual design
+  limitation; the modules and the off-chain platform have not been audited
 - Best for: regulated tokens, stablecoins, and compliance-bound assets
 
 See `references/cip-token-standards.md` for a detailed comparison.

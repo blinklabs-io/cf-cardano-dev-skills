@@ -245,9 +245,8 @@ governance actions.
 
 **Status:** Proposed, merged into the CIPs repository through
 [cardano-foundation/CIPs#444](https://github.com/cardano-foundation/CIPs/pull/444).
-A bundled `cips/` mirror older than the merge has no `CIP-0113/` folder; then point
-the user to https://cips.cardano.org/cip/CIP-0113. The reference implementation is
-bundled under `../../docs/sources/cip-113-programmable-tokens/`.
+The specification is at `../../docs/sources/cips/CIP-0113/README.md`; the reference
+implementation is bundled under `../../docs/sources/cip-113-programmable-tokens/`.
 
 **Summary:** Defines a standard for tokens with programmable validation logic — rules
 enforced on every transfer, mint, and burn. Tokens are held at a shared script address
@@ -261,8 +260,9 @@ framework.
 - Relevant for compliance-bound assets; plain minting policies remain right for most tokens
 
 **Note:** The Cardano Foundation's core on-chain framework has been professionally
-audited; the modules and the off-chain platform have not, and have been tested only on
-the Preview testnet. Check the PR for merge state, and the READMEs of
+audited, with each finding resolved or acknowledged as a residual design limitation; an
+audit does not by itself make a deployment safe. The modules and the off-chain platform
+have not been audited, and have been tested only on the Preview testnet. The READMEs of
 `../../docs/sources/cip-113-programmable-tokens/` and
 `../../docs/sources/cip-113-programmable-tokens-platform/` for each repository's audit status.
 
