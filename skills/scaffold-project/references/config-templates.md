@@ -2,7 +2,7 @@
 
 Reference snippets for the config files the scaffold prints. Each template is annotated inline so the developer understands what every field does and which fields they need to adjust.
 
-Versions are intentionally left as placeholder markers. At scaffold time, check the project's GitHub releases page or the bundled docs at `../../docs/sources/<source>/` and replace the marker with the latest stable release.
+Lines marked `PIN` hold the exact SDK and library versions these templates were written against; dev tooling (TypeScript, test runners, linters) takes a `^` range. To move a pin, check the project's GitHub releases page or the bundled docs at `../../docs/sources/<source>/`, then re-test before changing it.
 
 ## `aiken.toml` (all stacks)
 
@@ -53,16 +53,24 @@ Run `aiken build` to emit `plutus.json` (CIP-57 blueprint) into the project root
 
 ```gitignore
 # --- Aiken ---
-build/                        # aiken build output (compiled UPLC, plutus.json copies)
-artifacts/                    # any per-validator artifacts
-.aiken/                       # local Aiken cache
+# aiken build output (compiled UPLC, plutus.json copies)
+build/
+# any per-validator artifacts
+artifacts/
+# local Aiken cache
+.aiken/
 
 # --- Secrets ---
-.env                          # never committed; .env.example is the committed template
-.env.*.local                  # framework-specific local overrides
-.keys/                        # dev signing keys from Yaci DevKit
-*.skey                        # signing keys
-*.vkey                        # verification keys (usually safe but kept private by convention)
+# never committed; .env.example is the committed template
+.env
+# framework local overrides (.env.local, .env.development.local, ...)
+.env*.local
+# dev signing keys from Yaci DevKit
+.keys/
+# signing keys
+*.skey
+# verification keys (usually safe but kept private by convention)
+*.vkey
 
 # --- OS / editor ---
 .DS_Store
@@ -73,6 +81,8 @@ artifacts/                    # any per-validator artifacts
 
 # Add stack-specific entries below.
 ```
+
+Git reads a `#` only at the start of a line as a comment. A comment after a pattern becomes part of the pattern, so `.env   # note` ignores nothing. Keep comments on their own lines.
 
 Stack-specific additions:
 
@@ -136,6 +146,11 @@ CARDANO_NETWORK=devnet               # devnet | preview | preprod | mainnet
 YACI_STORE_URL=http://localhost:8080
 # DevKit admin API (CLI, wallet page, MCP). Not a chain-query endpoint.
 YACI_ADMIN_URL=http://localhost:10000
+# Ogmios and Kupo, started with `enable-kupomios` at the devnet prompt. The
+# Evolution SDK stack queries and submits through these; set them only if
+# you moved the ports.
+# OGMIOS_URL=http://localhost:1337
+# KUPO_URL=http://localhost:1442
 # Yaci DevKit auto-seeds wallets with test ADA at startup. Replace with an
 # address printed by `yaci-cli` when you start the devnet.
 DEV_WALLET_ADDRESS=

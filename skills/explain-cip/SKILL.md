@@ -119,12 +119,13 @@ the standard path is CIP-26, the off-chain token registry, not CIP-25.)
 
 **Developer impact:**
 - Metadata is stored in the transaction, not on the UTxO itself
-- Metadata is only in the minting transaction — it cannot be updated after minting
+- Metadata lives in minting transactions. It is fixed once the minting policy closes;
+  while the policy is open, a later mint carrying label 721 replaces it
 - Off-chain indexers (Blockfrost, Koios, etc.) parse and serve CIP-25 metadata
 - Simple to implement: add a metadata entry to the minting transaction
 
 **Limitations:**
-- Immutable after minting (no metadata updates)
+- Updatable only by minting again under an open policy, so no updates once the policy closes
 - Stored off-chain relative to the UTxO (only in the transaction)
 - Led to the creation of CIP-68 to address mutability and on-chain storage
 
@@ -157,7 +158,7 @@ standard for dApp-wallet interaction in browsers.
 - `window.cardano.<walletName>` exposes the wallet API
 - `enable()` returns an API object with methods for address, UTxO, and signing operations
 - All data is CBOR-encoded — SDKs handle serialization
-- Wallets: Begin, Eternl, Flint, GeroWallet, Lace, Nami, NuFi, RayWallet, Yoroi all implement CIP-30
+- Wallets: Begin, Eternl, GeroWallet, Lace, NuFi, RayWallet, Yoroi all implement CIP-30
 
 **Key API methods:**
 - `getNetworkId()` — returns 0 (testnet) or 1 (mainnet)
@@ -242,15 +243,15 @@ governance actions.
 
 ### CIP-113: Programmable Tokens
 
-**Status:** Proposed per the draft's own header — but the CIP is an **unmerged PR**
-([cardano-foundation/CIPs#444](https://github.com/cardano-foundation/CIPs/pull/444)),
-so it is not yet in the official CIPs repo or the bundled `cips/` mirror — though an
-adapted reference implementation is bundled under `../../docs/sources/cip-113-programmable-tokens/`.
+**Status:** Proposed, merged into the CIPs repository through
+[cardano-foundation/CIPs#444](https://github.com/cardano-foundation/CIPs/pull/444).
+The specification is at `../../docs/sources/cips/CIP-0113/README.md`; the reference
+implementation is bundled under `../../docs/sources/cip-113-programmable-tokens/`.
 
 **Summary:** Defines a standard for tokens with programmable validation logic — rules
 enforced on every transfer, mint, and burn. Tokens are held at a shared script address
 with ownership tracked by stake credential; an on-chain registry links each token to its
-transfer/issuance logic, and substandards (freeze-and-seize, KYC) plug into the shared
+transfer/issuance logic, and modules (freeze-and-seize, KYC) plug into the shared
 framework.
 
 **Developer impact:**
@@ -258,10 +259,12 @@ framework.
 - Shared-custody model: wallets/DEXes need stake-credential-aware integration
 - Relevant for compliance-bound assets; plain minting policies remain right for most tokens
 
-**Note:** The specification may still change, and the Cardano Foundation reference
-implementation is not professionally audited, has only been briefly tested on the
-Preview testnet, and is not production-ready. Check the PR and
-`../../docs/sources/cip-113-programmable-tokens/` for current state.
+**Note:** The Cardano Foundation's core on-chain framework has been professionally
+audited, with each finding resolved or acknowledged as a residual design limitation; an
+audit does not by itself make a deployment safe. The modules and the off-chain platform
+have not been audited, and have been tested only on the Preview testnet. The READMEs of
+`../../docs/sources/cip-113-programmable-tokens/` and
+`../../docs/sources/cip-113-programmable-tokens-platform/` for each repository's audit status.
 
 ### CIP-1694: Conway Era Governance (Voltaire)
 
@@ -292,7 +295,7 @@ When a developer describes a feature, map it to the relevant CIP:
 
 | Developer asks about... | Relevant CIP(s) |
 |---|---|
-| NFT metadata | CIP-25 (immutable), CIP-68 (updatable) |
+| NFT metadata | CIP-25 (updatable only by re-minting), CIP-68 (updatable) |
 | Wallet connection | CIP-30 |
 | Wallet governance | CIP-95 (extends CIP-30) |
 | Message signing | CIP-8 (via CIP-30's `signData`) |

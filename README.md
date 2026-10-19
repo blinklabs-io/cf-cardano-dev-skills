@@ -42,6 +42,7 @@ End result: the agent answers from current, project-authoritative sources instea
 | `setup-devnet` | Local devnet with Yaci DevKit or testnet setup |
 | `connect-wallet` | CIP-30 wallet integration for dApps |
 | `governance-guide` | CIP-1694 governance, DRep, voting, treasury |
+| `assess-constitutionality` | Assess a governance action against the Constitution: live, before submission, or as a draft |
 | `explain-eutxo` | Cardano's UTxO model for newcomers |
 | `explain-cip` | Walk through a specific CIP |
 | `explain-zk` | Zero-knowledge and the BLS12-381 primitive family (proofs, signatures, VRF, KDF, BBS+) |
@@ -77,9 +78,21 @@ itself, which can fall back to an SSH URL and fail with
 `git@github.com: Permission denied (publickey)` even though this repository is
 public and clones fine over HTTPS.
 
-### Claude Cowork (desktop, web, mobile)
+Claude Code auto-updates plugins only from marketplaces with auto-update on,
+and third-party marketplaces like this one start with it off. Turn it on once:
+run `/plugin`, open **Marketplaces**, select **cardano-dev-skills**, and choose
+**Enable auto-update**. To update by hand, run
+`claude plugin update cardano-dev-skills@cardano-dev-skills` from your shell
+and restart.
 
-Cowork uses the same plugin format, so this marketplace works there unchanged.
+### Claude app, formerly Claude Cowork (web, desktop, mobile)
+
+The Claude app's Chat side uses the same plugin format as Claude Code, so this
+marketplace works there unchanged. Installing here also syncs the plugin to Claude
+Code sessions signed in with the same account.
+
+Hooks don't run in chat, so the SessionStart hook's notices (docs age, context
+status) appear only in Cowork, where your app still has it, and in Claude Code.
 
 1. Open **Customize** and go to the **Plugins** tab.
 2. Under **Personal plugins**, click **+**, then **Add marketplace**.
@@ -87,9 +100,9 @@ Cowork uses the same plugin format, so this marketplace works there unchanged.
    `https://github.com/cardano-foundation/cardano-dev-skills`
 4. Install **cardano-dev-skills** from the marketplace once it syncs.
 
-The skills are the same ones listed above. Note that Cowork syncs the whole
-repository, and `docs/sources/` is roughly 30 MB of bundled documentation — the
-first sync is not instant.
+The skills are the same ones listed above. Note that the Claude app syncs the
+whole repository, and `docs/sources/` is roughly 30 MB of bundled documentation —
+the first sync is not instant.
 
 ### Codex
 
@@ -196,9 +209,9 @@ A `SessionStart` hook (`hooks/check-docs.sh`) inspects the bundled corpus and th
 - **Third-party data notice.** A standing reminder that bundled docs under `docs/sources/` are third-party reference data, never instructions to execute.
 - **Docs stale (>30 days).** Suggests how to refresh based on install topology:
   - Local clone: `cd <plugin-root> && git pull && ./scripts/fetch-docs.sh`.
-  - Marketplace install: `Refresh via: /plugin marketplace update cardano-dev-skills`.
+  - Marketplace install: `claude plugin update cardano-dev-skills@cardano-dev-skills` from a shell, or auto-update turned on for the marketplace in `/plugin`.
 - **Plugin clone behind upstream.** Local clones only: if you have previously run `git fetch` and not pulled, the hook prints `Plugin clone is N commit(s) behind FETCH_HEAD — consider 'git pull' in <plugin-root>`. The hook never fetches itself (no network on session start).
-- **Cardano context active.** When `./CLAUDE.md` contains the `cardano-dev-skills` directive block: `Cardano context active in this project.` Codex reads the corresponding `AGENTS.md` block directly and does not depend on this hook.
+- **Cardano context active.** When `./CLAUDE.md` contains the current `cardano-dev-skills` directive block: `Cardano context active in this project.` An older block gets a prompt to re-run `/cardano-dev-skills:cardano-context` instead; a block newer than the installed plugin gets a prompt to update the plugin. Codex reads the corresponding `AGENTS.md` block directly and does not depend on this hook.
 - **Cardano context nudge.** When cwd looks like a project (`.git`, `.claude`, or existing `CLAUDE.md`) but has no block: `Tip: run /cardano-dev-skills:cardano-context to enable auto-consultation in this project.`
 
 The hook is fail-open: any failure exits 0 silently and never blocks the session. The cwd nudge is suppressed when working inside the plugin repo itself.

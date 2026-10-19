@@ -56,8 +56,8 @@ Search the bundled documentation for relevant content:
 - `../../docs/sources/koios/` - Koios API docs
 - `../../docs/sources/cardano-graphql/` - Cardano GraphQL docs
 - `../../docs/sources/db-sync/` - DB-Sync docs
-- `../../docs/sources/yaci-store/` - Yaci Store (modular JVM indexer; see `stores/`, `plugins/`, `usage/as-library/`, `analytics/`)
-- `../../docs/sources/yaci-store-mcp/` - Yaci Store MCP server, analytics query layer, and the `mcp` profile
+- `../../docs/sources/yaci-store/` - Yaci Store 2.x (modular JVM indexer; see `stores/`, `plugins/`, `usage/as-library/`)
+- `../../docs/sources/yaci-store-mcp/` - Yaci Store 3.x analytics store, MCP server, query layer, Blockfrost-compatible API, and the `mcp` profile
 - `../../docs/sources/evolution-sdk/` - Evolution SDK docs (TypeScript client; see `providers/` and `querying/`)
 - `../../docs/sources/blockfrost-go/` - Blockfrost Go client (typed endpoint wrappers)
 - `../../docs/sources/utxorpc-go-sdk/` - UTxORPC Go SDK (provider-agnostic gRPC)
@@ -166,15 +166,16 @@ process replaces the usual node-plus-Ogmios-plus-Kupo stack:
 
 #### Yaci Store (Self-hosted indexer with an analytics store)
 
-- Modular JVM indexer: each store you enable (UTxO, transactions, assets, staking, governance, ...) lands in your own PostgreSQL, with a Blockfrost-compatible REST API on top, so Blockfrost clients point at it unchanged
-- Its optional analytics store exports the index to Parquet and serves read-only DuckDB SQL through an MCP server (the `mcp` profile) and a REST query API. Both are off by default and unauthenticated; put an authenticating proxy in front before they leave localhost
-- There is no public instance to recommend. For analytics, the developer supplies the URL of a Yaci Store they run, or a Parquet export to read with DuckDB
-- Docs: `../../docs/sources/yaci-store/` (`analytics/`) and `../../docs/sources/yaci-store-mcp/`
+- Modular JVM indexer: each store you enable (UTxO, transactions, assets, staking, governance, ...) lands in your own database (PostgreSQL, MySQL or H2), behind Yaci Store's own REST API
+- The analytics store, the MCP server and an opt-in Blockfrost-compatible API (the `blockfrost` profile, under `/api/v1/blockfrost`) ship only in the 3.x line, which is still in beta: say so when recommending them, and check the release notes before building on them
+- The analytics store exports the index from PostgreSQL to Parquet and serves read-only DuckDB SQL through an MCP server (the `mcp` profile) and a REST query API. Both are off by default and unauthenticated; put an authenticating proxy in front before they leave localhost
+- For analytics, the developer supplies the URL of a Yaci Store they run, or a Parquet export to read with DuckDB. The Cardano Foundation also hosts a public playground with the MCP enabled at `https://yaci-playground.cf-app.org/mcp`: fine for trying the tools, but its URL, network and data freshness are not guaranteed, so check what `analytics-list-tables` reports before quoting a figure from it
+- Docs: `../../docs/sources/yaci-store-mcp/` (`docs/app/docs/v3/analytics/`, `aggregates/`)
 
 When answering from a Yaci Store analytics store:
 
 1. Call `analytics-list-tables`, then `analytics-describe-table` for every table the query touches, before writing SQL
-2. Filter every table on its partition column (`date` or `epoch`), add a `LIMIT`, and aggregate rather than list. The server caps rows and time per call (10,000 rows and 300 s at most by default)
+2. Filter every table on its partition column (`date` or `epoch`), add a `LIMIT`, and aggregate rather than list. The server returns 100 rows and allows 30 s per call by default; a call can ask for up to 10,000 rows and, through the MCP tool, 300 s; the operator can only lower those ceilings
 3. Amounts are lovelace integers: sum as integers, divide by 1,000,000 once, and label the unit
 4. The current epoch is still open: label it as partial or stop at the last closed epoch
 5. DReps registered with a script hash vote too; count both credential types
@@ -235,7 +236,7 @@ Three Go paths, ordered by how much infrastructure you run:
 - **UTxORPC Go SDK** — the role Evolution SDK plays for TypeScript: the provider becomes a config choice rather than a code rewrite, against any UTxORPC-compatible backend. Paging query helpers (`GetUtxosByAddressPages`, `GetUtxosByAssetPages`, tuned with `WithSearchMaxItems` / `WithSearchStartToken`); submit and mempool operations on `UtxorpcClient` (`SubmitTx`, `EvalTx`, `WaitForTx`, `ReadMempool`, `WatchMempool`). Best when you may switch providers later.
 - **gOuroboros** — speaks the node's mini-protocols directly, with no intermediary. `NewConnection(...)`, then `LocalStateQuery().Client` for point-in-time state (`GetUTxOByAddress`, `GetUTxOByTxIn`, `GetCurrentProtocolParams`, `GetStakeDistribution`, `GetDRepState`, `GetProposals`) or `ChainSync().Client` to follow the chain (`GetCurrentTip`, `GetAvailableBlockRange`, `Sync`). Lowest latency and no third party, but you run the node and manage the protocol lifecycle yourself.
 
-Runnable examples ship in the mirror: `../../docs/sources/gouroboros/examples/state-query/main.go` and `.../examples/chain-sync/main.go`. Because Go sources mirror `.go` files, search for a method name to get its signature and doc comment.
+The mirror documents each client, with Go snippets, in `../../docs/sources/gouroboros/protocol/localstatequery/README.md` and `../../docs/sources/gouroboros/protocol/chainsync/README.md`; `../../docs/sources/gouroboros/connection.go` holds `NewConnection` and its options. Because Go sources mirror `.go` files, search for a method name to get its signature and doc comment.
 
 ### Step 6: Provide working code
 

@@ -100,7 +100,7 @@ Comprehensive map of tools, SDKs, and infrastructure in the Cardano developer ec
 | Name | Status | Best For |
 |---|---|---|
 | **cardano-node** | Production | Running a full Cardano node. Required for SPOs and self-hosted infra. |
-| **Dolos** | Experimental | Lightweight data-only node (no block production). Faster sync. |
+| **Dolos** | Production | Lightweight data-only node (no block production). Faster sync. |
 | **Amaru** | Experimental | Alternative node implementation in Rust. |
 | **Dingo** | Experimental | Alternative node implementation in Go, with UTxORPC, Blockfrost-compatible REST, and Mesh APIs served by the node itself. Block production is exercised on public testnets; its README rules out mainnet. |
 | **Mithril** | Production | Fast bootstrapping via snapshot certificates. Sync in minutes, not days. |
@@ -116,6 +116,15 @@ Comprehensive map of tools, SDKs, and infrastructure in the Cardano developer ec
 | **SanchoNet** | Governance testnet | Production | Governance-specific testing. |
 | **tx-village** | Tx testing framework | Experimental | Transaction-level testing. |
 | **Plutip** | Local cluster | Production | Haskell-based local cluster testing. |
+
+## Debugging
+
+| Name | Type | Status | Best For |
+|---|---|---|---|
+| **aiken tx simulate** | CLI evaluator | Production | Per-redeemer budgets and traces for a whole transaction, with `--script-override` to test a fix. Works for devnet transactions when you supply the resolved inputs. |
+| **Cquisitor** | Web app | Production | Decoding CBOR byte by byte, checking it against the CDDL, and validating both phases in the browser. |
+| **cardano-debug-mcp** | MCP server | Experimental | Letting an agent validate a transaction, step its scripts and decompile them, on Cquisitor's engines. Preview, preprod and mainnet inputs only. |
+| **Gastronomy** | UPLC step debugger | Beta (pre-1.0) | Stepping a script forward and backward by hand in a terminal or desktop UI. No agent-readable output. |
 
 ## Governance Tools
 
@@ -133,7 +142,7 @@ Comprehensive map of tools, SDKs, and infrastructure in the Cardano developer ec
 | **Hydra Head** | Isomorphic state channel (L2) | Production | A known, fixed set of parties transacting at high frequency among themselves, where all parties run a node and stay online. Same tx format and ledger rules as L1 (isomorphic). |
 | **Mithril** | Snapshot certificates | Production | Fast node bootstrap and light-client sync — not tx throughput. |
 | **Partner Chains** | Sidechains | Experimental | Custom app-specific chains anchored to Cardano. |
-| **Input Endorsers (Leios)** | L1 scaling | Research | Future L1 throughput improvements; not a tool you integrate today. |
+| **Ouroboros Leios** | L1 scaling | In development | Higher L1 throughput via committee-certified endorser blocks (CIP-164); a protocol upgrade, not a tool you integrate. |
 | **Midgard** | Optimistic rollup | Experimental | L2 without a fixed participant set. Frontier; **not a bundled source** — verify upstream, don't build production on it yet. |
 | **Gummiworm** | Validium-style L2 | Experimental | Off-chain data-availability L2. Not mainnet-ready; not bundled. |
 
@@ -181,8 +190,6 @@ below carry only facts (language, license) and a project's own stated caveats.
 |---|---|---|---|
 | **Eternl** | Browser extension | Yes | Yes |
 | **Lace** | Browser extension | Yes | Yes |
-| **Nami** | Browser extension | Yes | Partial |
-| **Flint** | Browser extension | Yes | Yes |
 | **Vespr** | Mobile + extension | Yes | Yes |
 | **Typhon** | Browser extension | Yes | Yes |
 | **GeroWallet** | Browser extension | Yes | Partial |

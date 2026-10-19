@@ -44,8 +44,11 @@ type RewardParameters struct {
 	// Protocol version for reward calculation rules
 	ProtocolVersion ProtocolParametersProtocolVersion
 
-	// MaxPledgeLeverage is the Dijkstra CIP-50 pledge-to-stake cap in [1,
-	// 10000]. It is inactive before Dijkstra and when unset.
+	// MaxPledgeLeverage is the Dijkstra CIP-50 pledge-to-stake cap. The
+	// protocol parameter is any non-negative rational, but CalculateRewards
+	// only supports [1, 10000]: below 1 cardano-ledger's maxPool' can go
+	// negative, which this calculator does not model. It is inactive before
+	// Dijkstra and when unset.
 	MaxPledgeLeverage *big.Rat
 
 	// MinPoolMargin is the Dijkstra CIP-23 minimum pool margin in [0, 1]. It is
@@ -127,13 +130,22 @@ type RewardCalculationResult struct {
 	UpdatedPots AdaPots
 }
 
+// RewardCredential identifies a reward recipient by credential kind and hash.
+type RewardCredential struct {
+	CredType   uint
+	Credential CredentialHash
+}
+
 // PoolRewards contains rewards for a specific pool
 type PoolRewards struct {
+	// OperatorRewardAccount receives the pool operator rewards.
+	OperatorRewardAccount RewardCredential
+
 	// Pool operator rewards
 	OperatorRewards uint64
 
-	// Delegator rewards by stake key hash
-	DelegatorRewards map[AddrKeyHash]uint64
+	// Delegator rewards by stake credential
+	DelegatorRewards map[RewardCredential]uint64
 
 	// Total rewards for this pool
 	TotalRewards uint64
@@ -639,8 +651,11 @@ func distributePoolRewards(
 	// Check if poolCost already uses up all the available rewards
 	if totalPoolRewards <= poolCost {
 		return &PoolRewards{
+			OperatorRewardAccount: rewardCredential(
+				poolParams.RewardAccountCredential(),
+			),
 			OperatorRewards:  totalPoolRewards,
-			DelegatorRewards: make(map[AddrKeyHash]uint64),
+			DelegatorRewards: make(map[RewardCredential]uint64),
 			TotalRewards:     totalPoolRewards,
 		}
 	}
@@ -691,7 +706,7 @@ func distributePoolRewards(
 	}
 
 	// Distribute stakeholder rewards proportionally to stake
-	delegatorRewards := make(map[AddrKeyHash]uint64)
+	delegatorRewards := make(map[RewardCredential]uint64)
 
 	assigned := uint64(0)
 	if totalPoolStake > 0 && stakeholderRewardsTotal > 0 {
@@ -706,7 +721,7 @@ func distributePoolRewards(
 					pot,
 				)
 				reward.Div(reward, total)
-				delegatorRewards[stakeKey] = reward.Uint64()
+				delegatorRewards[keyRewardCredential(stakeKey)] = reward.Uint64()
 				assigned += reward.Uint64()
 			}
 		}
@@ -718,9 +733,26 @@ func distributePoolRewards(
 	}
 
 	return &PoolRewards{
+		OperatorRewardAccount: rewardCredential(
+			poolParams.RewardAccountCredential(),
+		),
 		OperatorRewards:  operatorRewards,
 		DelegatorRewards: delegatorRewards,
 		TotalRewards:     totalPoolRewards,
+	}
+}
+
+func rewardCredential(credential Credential) RewardCredential {
+	return RewardCredential{
+		CredType:   credential.CredType,
+		Credential: credential.Credential,
+	}
+}
+
+func keyRewardCredential(hash AddrKeyHash) RewardCredential {
+	return RewardCredential{
+		CredType:   CredentialTypeAddrKeyHash,
+		Credential: CredentialHash(hash),
 	}
 }
 
