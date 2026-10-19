@@ -8,13 +8,13 @@ npx cip30-test-wallet init-script [--options <file.json>] [--network 0|1] [--nam
 
 | Flag | Meaning |
 |---|---|
-| `--options <file.json>` | Wallet options as JSON, the same shape as the fixture's `walletOptions`: `name`, `networkId`, `utxos`, `foreignUtxos`, `quirks`, `stakeRegistered` and the rest |
+| `--options <file.json>` | Wallet options as JSON, the same shape as the fixture's `walletOptions`: `name`, `networkId`, `utxos`, `foreignUtxos`, `quirks`, `stakeRegistered`, `ledger` and the rest. `install: false`, `ledger.checks` and `ledger.chain` are refused |
 | `--network 0\|1` | Overrides `networkId`. 0 is testnet, 1 is mainnet |
 | `--name <name>` | Overrides the key under `window.cardano`, `chw` by default |
 | `--mnemonic-env <VAR>` | Reads the mnemonic from this environment variable, so it never appears on the command line or in shell history |
 | `--out <file.js>` | Writes the script to this file. Without it the script goes to stdout |
 
-Flags win over the options file. Without any flag the script installs the default wallet on testnet. Exit 0 on success, 2 when an argument or the options file is invalid.
+Flags win over the options file. Without any flag the script installs the default wallet on testnet. Exit 0 on success, 2 when an argument or the options file is invalid. `npx cip30-test-wallet --help`, or `-h` in its place, prints the usage of both commands, as does a call without arguments.
 
 ```json
 { "networkId": 0, "utxos": [{ "lovelace": 50000000 }], "quirks": { "signHangs": true } }
@@ -42,10 +42,16 @@ Without the fixture there is no `wallet` handle. The same controls are on `windo
 | Member | Meaning |
 |---|---|
 | `journal` | Array of `{ method, args, result?, error?, t }`, one entry per CIP-30 call, key material never included |
-| `setQuirk(name, value)` | Flips a quirk at runtime. Throws for an unknown name and for the install-time quirks `lateInjection` and `answersEveryKey` |
+| `setQuirk(name, value)` | Flips a quirk at runtime. Throws for an unknown name, for the install-time quirks `lateInjection` and `answersEveryKey`, and for a `submitFails` value other than `true`, `false`, `undefined` or a non-empty string |
 | `release('signTx')`, `reject('signTx')` | Ends a hanging `signTx` and returns how many calls it settled |
 
 Like the fixture's journal, this state lives in the page and resets on every navigation. Read the journal before the agent navigates away.
+
+## State after submit
+
+Without the fixture there is no host to keep the ledger in. The wallet applies each submitted transaction to its UTxOs inside the page, until the page loads again. `--options` with `{ "ledger": { "state": false } }` switches this off.
+
+The ledger checks (`ledger.checks`) and chain mode (`ledger.chain`) run in Node, so `init-script` refuses options that set them. Use the Playwright fixture or `attachWallet` for them.
 
 ## Keys
 

@@ -1,6 +1,6 @@
 # Quirk catalogue
 
-Every switch in the wallet has a note here with where it was observed, when, what breaks in a dApp because of it, and its lifecycle status: `reported` (sent in, not reproduced), `confirmed` (reproduced against a current wallet version), `historical` (the wallet fixed it, kept because the spec does not rule the behaviour out). Historical quirks never run in a recommended bundle, you switch them on explicitly.
+Every switch in the wallet has a note here with where it was observed, when, what breaks in a dApp because of it, and its lifecycle status: `reported` (sent in, not reproduced) or `confirmed` (reproduced against a current wallet version). Every quirk is off until a test switches it on.
 
 No switch without a note. A quirk nobody can trace is the stale wallet profile this project exists to avoid.
 
@@ -13,6 +13,7 @@ No switch without a note. A quirk nobody can trace is the stale wallet profile t
 | `signRejected` | confirmed | [sign-rejected.md](sign-rejected.md) |
 | `signHangs` | confirmed | [sign-hangs.md](sign-hangs.md) |
 | `signDataRejected` | confirmed | [sign-data-rejected.md](sign-data-rejected.md) |
+| `submitFails` | reported | [submit-fails.md](submit-fails.md) |
 | `noCip95` | confirmed | [no-cip95.md](no-cip95.md) |
 | `cip95NamespaceMissing` | reported | [cip95-namespace-missing.md](cip95-namespace-missing.md) |
 | `cip95SignData` | reported | [cip95-sign-data.md](cip95-sign-data.md) |
