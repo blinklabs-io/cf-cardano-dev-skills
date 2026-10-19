@@ -217,7 +217,7 @@ if [ -n "${OLD_TZ}" ]; then export TZ="${OLD_TZ}"; else unset TZ; fi
 contains "${OUT}" "updated" && [ "${RC}" -eq 0 ]
 check "fresh fetch keeps its age west of UTC (BSD parses local time)" $?
 
-# 11-13. The CLAUDE.md block check. The current version comes from the
+# 11-15. The CLAUDE.md block check. The current version comes from the
 #        plugin's cardano-context skill, so an older block must say so instead
 #        of reporting "active" forever. These run from a project directory,
 #        because the check reads ./CLAUDE.md.
@@ -244,6 +244,20 @@ contains "${OUT}" "context active" && [ "${RC}" -eq 0 ]; check "current block re
 run_hook_in "$(make_project older v2)" "${root}"
 contains "${OUT}" "older version" && ! contains "${OUT}" "context active" && [ "${RC}" -eq 0 ]
 check "older block asks for a re-run" $?
+
+# Versions compare as numbers, so v10 is newer than v3, not older.
+root10="$(make_root context10 "last_fetched: \"${NOW_ISO}\"")"
+mkdir -p "${root10}/skills/cardano-context"
+printf '<!-- BEGIN cardano-dev-skills v10 -->\n' > "${root10}/skills/cardano-context/SKILL.md"
+run_hook_in "$(make_project v9 v9)" "${root10}"
+contains "${OUT}" "older version" && [ "${RC}" -eq 0 ]; check "v9 block is older than v10" $?
+
+# A block written by a newer plugin must not be told to re-run the skill,
+# which would downgrade it.
+run_hook_in "$(make_project newer v4)" "${root}"
+contains "${OUT}" "context active" && contains "${OUT}" "update the plugin" \
+  && ! contains "${OUT}" "older version" && [ "${RC}" -eq 0 ]
+check "newer block stays active and asks for a plugin update" $?
 
 # Without the skill file there is nothing to compare against, so any block
 # counts as current rather than nagging on every session.
