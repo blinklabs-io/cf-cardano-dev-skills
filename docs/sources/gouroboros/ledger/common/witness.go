@@ -42,9 +42,12 @@ type BootstrapWitness struct {
 }
 
 func (w *BootstrapWitness) UnmarshalCBOR(data []byte) error {
+	// The chain-code width is era-version dependent: Dijkstra enforces 32
+	// bytes in its witness-set decoder, while earlier eras preserve the
+	// reference decoder's permissive behavior.
 	fields, err := decodeByteStringArray(
 		data,
-		[]int{32, 64, 32, -1},
+		[]int{32, 64, -1, -1},
 		"bootstrap witness",
 	)
 	if err != nil {
@@ -88,10 +91,12 @@ func ValidateCollateralVKeyWitnesses(
 	// witnesses at all is not itself an error here: only a key-locked
 	// collateral input needs a matching one, checked per input below.
 	hashes := make(map[Blake2b224]struct{})
+	var bootstrapWitnesses []BootstrapWitness
 	if w := tx.Witnesses(); w != nil {
 		for _, vw := range w.Vkey() {
 			hashes[Blake2b224Hash(vw.Vkey)] = struct{}{}
 		}
+		bootstrapWitnesses = w.Bootstrap()
 	}
 	for _, input := range collateral {
 		utxo, err := ResolveInputUtxo(ls, input)
@@ -118,10 +123,28 @@ func ValidateCollateralVKeyWitnesses(
 			continue
 		}
 		h := pk.Hash
-		if _, ok := hashes[h]; !ok {
+		if _, ok := hashes[h]; ok {
+			continue
+		}
+		if addr.Type() == AddressTypeByron {
+			found := false
+			for _, witness := range bootstrapWitnesses {
+				addressRoot, err := computeByronAddressRoot(
+					witness.PublicKey,
+					witness.ChainCode,
+					witness.Attributes,
+				)
+				if err == nil && addressRoot == h {
+					found = true
+					break
+				}
+			}
+			if found {
+				continue
+			}
 			return NewValidationError(
 				ValidationErrorTypeTransaction,
-				"missing vkey witness for collateral input",
+				"missing bootstrap witness for Byron collateral input",
 				map[string]any{
 					"input":   input.String(),
 					"keyhash": h.String(),
@@ -129,6 +152,15 @@ func ValidateCollateralVKeyWitnesses(
 				nil,
 			)
 		}
+		return NewValidationError(
+			ValidationErrorTypeTransaction,
+			"missing vkey witness for collateral input",
+			map[string]any{
+				"input":   input.String(),
+				"keyhash": h.String(),
+			},
+			nil,
+		)
 	}
 	return nil
 }
