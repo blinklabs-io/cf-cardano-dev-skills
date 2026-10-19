@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/blinklabs-io/dingo/chainselection"
 	"github.com/blinklabs-io/dingo/database"
 	"github.com/blinklabs-io/dingo/event"
 	"github.com/blinklabs-io/dingo/ledger"
@@ -30,6 +31,32 @@ import (
 	lcommon "github.com/blinklabs-io/gouroboros/ledger/common"
 	gdijkstra "github.com/blinklabs-io/gouroboros/ledger/dijkstra"
 )
+
+func validateLeiosPersistenceRetention(
+	retention, securityParam uint64,
+	activeSlotCoeff *big.Rat,
+) error {
+	if retention == 0 {
+		return nil
+	}
+	minimum := chainselection.GenesisWindowSlotsForParams(
+		securityParam,
+		activeSlotCoeff,
+	)
+	if minimum == 0 {
+		return errors.New(
+			"leios persistence retention requires known stability parameters",
+		)
+	}
+	if retention < minimum {
+		return fmt.Errorf(
+			"leios persistence retention %d slots is below the stability window of %d slots",
+			retention,
+			minimum,
+		)
+	}
+	return nil
+}
 
 // leiosStakeDistributionAdapter adapts ledger.LedgerState to
 // leios.StakeDistributionProvider, reusing the same txn-scoped ledger
@@ -84,7 +111,7 @@ func (a *leiosKeyProviderAdapter) GetLeiosKeys(
 	if db == nil {
 		return nil, errors.New("database unavailable")
 	}
-	txn := db.MetadataTxn(false)
+	txn := db.MetadataTxn(context.Background(), false)
 	if txn == nil {
 		return nil, errors.New("metadata transaction unavailable")
 	}
@@ -121,7 +148,7 @@ func (a *leiosCommitteeParamsAdapter) LeiosCommitteeParameters(
 	if db == nil {
 		return 0, nil, errors.New("database unavailable")
 	}
-	txn := db.MetadataTxn(false)
+	txn := db.MetadataTxn(context.Background(), false)
 	if txn == nil {
 		return 0, nil, errors.New("metadata transaction unavailable")
 	}
